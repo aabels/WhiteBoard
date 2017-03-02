@@ -1,0 +1,38 @@
+Objective:
+specification of the protocol between client and server and minimum of client-side and sever-side behavior/interaction.
+
+Initial Handshake:
++ Connect a client to the server
++ Upon server initialization, clean all entries
++ Server Responds by sending 	'CMPUIT379 Whiteboard Server 	v0\n01\n'
++ Followed by the number of entries in the whiteboard.
++ Has max number of entries.
+
+Whiteboard Messages:
+- A client can send a query:
+	1. '?12\n'
+Meaning client wants 12th entry from the whiteboard.
+Output(from server): '!12p#chars\nthisisthemessage\n'
+if entry is empty return: '!12po\n\n'
+
+-client can update an entry:
+Input: '@12p16\nthisisthetest\n'
+
+Output(server):'!12e0\n\n'
+to indicate success of the update
+
+-client can "clean" an entry
+Input(client): '@12p0\n\n'
+
+Error Handling:
+1. If client query/update an entry with number larger than the number of entries.
+Output(server): '!12e14\nNo such entry!\n'
+
+Encryption:
+openssl and Base64 functionalities
+AES-256-CBC
+
+-using EVP_aes_256_cbc()
+-Base64 transformation library routines
+-Base64 strings should not be split by newline characters
+(option BIO_FLAGS_BASE64_NO_NL).

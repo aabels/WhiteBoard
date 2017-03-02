@@ -1,0 +1,33 @@
+TCP (Transmission Control Protocol) &IP (Internet Protocol):
+Is the basic communication language or protocol of the internet. It can be used as a 
+communications protocol in a private network (either intranet or extranet)
+
+Inrtanet:
+private network that is contained within an enterprise
+
+Extrnet:
+private netork that used Internet technology and the public telecommunication system to 
+securely share part of a bussiness's information or operations.
+
+Is a 2 layer program..
+	HigherLayer - Transmission Control Protocol manages the assembling of a message
+	 or file into smaller packets that are rtansmitted over the internet and recieved by
+	a TCP layer that resembles the packets into the origin message.
+
+	LowerLayer - Internet Protocol handles the ADDRESS part of each packet so that it 
+	gets to the right destination. Each gatewat computer on the neetwork checks this
+	address to see where to forward the message.
+
+TCP/IP uses the client/server model of communication which a computer user(a client)
+	requests and is provided a service (such as sending a Web page) by another 
+	computer (a server) in the network. TCP/IP are considered "stateless" as in they
+	do not need constant connection like a telephone call. Being stateless frees the 
+	network path so everyone can use them continuously.
+
+User Datagram Protocol (UDP), which is used instead of TCP for special purposes.
+Both UDP/IP run on top of the Internet Protocol. UDP just sends the packets which mean it 
+has a lower bandwidth overhead latency
+
+UDP privides 2 services not provided by the IP layer:
+	1.  has port numbers to help distinguish different user requests
+	2. has a checksum capability to verify that the data arrived intact.
