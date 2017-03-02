@@ -88,15 +88,40 @@ A typical Client Program:
 
 
 A Typical Server Program:
-
+    
+    Prepare to communicate
+	- Create a socket Associate local address and port with the socket
+		+ int bind (int sockfd, struct sockaddr *my_addr, socklen_t addrlen)
+		+ Arguements: socket descriptor, server address, address length
+		+ returns ) on success, and -1 if error
     Passive open
-	- Prepare to accept connections
-	- but dont establish one yet until hearing from a client
+	- Prepare to accept connections indicate how many clinets-in-waiting to permit
+	- but dont establish one yet until hearing from a clien
+	-accept an incoming connection from a client
+		+int accept(int sockfd, struct sockaddr *addr, socketlen_t * addrlen)
+		+ Arguements: socket descriptor, structure that will provide client address and port, and
+		length of the struct
+		+ Returns descriptor for a new socket for this connection
 
     Hearing from multiple clients
 	-allow a backlog of waiting clients in case several try to start at once.
+		+ int listen(int sockfd, int backlog)
+		+Arguements: socket descriptor and acceptable backlog
+		+ Returns 0 on success, and -1 on error
     Create a socket for each client
 	- Upon accepting a new client cre4ate a new socket for communication
-
+    Exchange Data with the client over new socket
+	- Recieve data from the socket
+	- Do stuff to handle the request (eg get a file from a query)
+	- Send data to the socket
     Close the socket
 	+int close(int sockfd)
+
+    Repeat the next connection request
+
+
+TIPS:
+	1. What happens if no clients are around?
+	Accept() call blocks waiting for a client
+
+	Server can process just one request at a time
