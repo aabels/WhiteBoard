@@ -38,6 +38,10 @@ In UNIX, everything is like a file
 	2. All output is like writting a file
 	3. File is represented by an integer file descriptor
 
+IP is big endian (aka "network byte order")
+	-Byte3, byte2, byte 1, byte 0
+	-Use htons() and htonl() to convert to network byte order
+
 System calls for sockets
 	-Client: create, connect, write, read, close
 	-Server: create, bind, linsten, accept, read, write, close
@@ -46,12 +50,53 @@ A typical Client Program:
 
     Prepare to communicate:
 	+ Create a Socket
+		1. Operation to create a socket
+			a. int socket(int domain, int protocol)
+			b. Returns a descriptor (or handle) for the socket
+		2. Domain: protocol family
+			- PF_INET for the internet
+		3. Type
+			+ SOCK_STREAM: reliable byte stream
+			+ SOCK_DGRAM: message-orientated service
+		4. Protocol: specific protocol
+			+ UNSPEC: unspecified
+			+ (PF_INET and SOCK_STREAM already implies TCP)
 	+ Determine server address and port number
+		1. Translating the servers name to an address
+			-struct hostent *gethostbyname( char *name)
+			-arguement is the name of the host
+			-returns a struct that includes the host address
+		2. Identify the port number
+			+ struct servent *getservbyname(char *name, char *proto)
+			+Arguements: service (eg. ftp) and protocol (eg. tcp)
 	+ Initiate the connection to the server
+		3. Establish the connection
+			+ int connect(int sockfd, struct sockaddr *server_address, socketlen_t addrlen)
+			+ Arguements: socket descriptor, server address, and address size
+			+ Returns ) on success and -1 on error
     
     Exchange data with the server:
 	+ Write data to the socket
+		- ssize_t write(int sockfd, void *buf, size_t len)
+		-Arguements: socket descriptor, pointer to buffer of data to send, and length of the buffer
+		-Returns the number of charcters written, and -1 on error
 	+Read data from the socket
+		-ssize_t read(int sockfd, void *buf, size_t len)
+		- Arguements: socket descriptor, pointer to buffer to place the data, size of the buffer
+		-Returns the number of characters read (where 0 implioes "end of file"), and -1 on error
 	+Do stuff with the data
 
+
+A Typical Server Program:
+
+    Passive open
+	- Prepare to accept connections
+	- but dont establish one yet until hearing from a client
+
+    Hearing from multiple clients
+	-allow a backlog of waiting clients in case several try to start at once.
+    Create a socket for each client
+	- Upon accepting a new client cre4ate a new socket for communication
+
     Close the socket
+	+int close(int sockfd)
