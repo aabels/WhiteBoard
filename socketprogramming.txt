@@ -31,3 +31,27 @@ has a lower bandwidth overhead latency
 UDP privides 2 services not provided by the IP layer:
 	1.  has port numbers to help distinguish different user requests
 	2. has a checksum capability to verify that the data arrived intact.
+
+
+In UNIX, everything is like a file
+	1. All input is like reading a file
+	2. All output is like writting a file
+	3. File is represented by an integer file descriptor
+
+System calls for sockets
+	-Client: create, connect, write, read, close
+	-Server: create, bind, linsten, accept, read, write, close
+
+A typical Client Program:
+
+    Prepare to communicate:
+	+ Create a Socket
+	+ Determine server address and port number
+	+ Initiate the connection to the server
+    
+    Exchange data with the server:
+	+ Write data to the socket
+	+Read data from the socket
+	+Do stuff with the data
+
+    Close the socket
