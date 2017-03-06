@@ -15,7 +15,7 @@ Is a 2 layer program..
 	a TCP layer that resembles the packets into the origin message.
 
 	LowerLayer - Internet Protocol handles the ADDRESS part of each packet so that it 
-	gets to the right destination. Each gatewat computer on the neetwork checks this
+	gets to the right destination. Each gateway computer on the network checks this
 	address to see where to forward the message.
 
 TCP/IP uses the client/server model of communication which a computer user(a client)
