@@ -30,7 +30,7 @@ int main()
 		exit (1);
 	}
 
-	while (1) {
+	//while (1) {
 		s = socket (AF_INET, SOCK_STREAM, 0);
 
 		if (s < 0) {
@@ -47,13 +47,19 @@ int main()
 			perror ("Client: cannot connect to server");
 			exit (1);
 		}
-
+		//if client say wants to look at the 12th entry
+		//has a protocol
+		//''?12\n'  have to add newline char
+		//servre sends
+		//@12p5\Hello\n
 		//read (s, &number, sizeof (number));
 		bzero(msg, 100);
-		recv(s, msg, sizeof(msg), 0);
+		//printf("before recv\n");
+		recv(s, msg, 100, 0);
+		//printf("After recv\n");
 		printf("%s\n", msg);
 		close (s);
 		//fprintf (stderr, "Process %d gets number %d\n", getpid (), ntohl (number));
 		sleep (2);
-	}
+	//}
 }
