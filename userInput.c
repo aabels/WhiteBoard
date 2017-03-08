@@ -53,7 +53,10 @@ int main( int argc, char* argv[]) {
     rc = getLine ("Enter specified entry number: ", buff, sizeof(buff));
     printf ("Entry number:  [%s]\n", buff);
     sprintf(tooServer, "?%s\n", buff);
+    //send to the Server
     printf("%s\n", tooServer);
+    //depending on if the entry is c or p do something HERE
+    //ie. try to decrypt using the keys in a text file
   }
   if (strcmp(buff,UPDATE)== 0) {
     memset(buff, 0, sizeof(buff));
@@ -63,12 +66,14 @@ int main( int argc, char* argv[]) {
 
     rc = getLine ("(c or p): ", type, sizeof(type));
     sprintf(tooServer+strlen(tooServer),"%s",type);
+    //depending on if its c or p encrypt or decrypt or just send to server
     printf("%s\n", tooServer);
 
     memset(buff, 0, sizeof(buff));
     memset(type, 0, sizeof(type));
     rc = getLine ("Enter your message. ", buff, sizeof(buff));
     sprintf(tooServer+ strlen(tooServer),"%d\n%s\n", strlen(buff), buff);
+    //send to server
     printf("%s\n", tooServer);
   }
   if (strcmp(buff, CLEAN)== 0) {
@@ -81,6 +86,7 @@ int main( int argc, char* argv[]) {
     sprintf(tooServer+strlen(tooServer),"%s\n\n",type);
     memset(buff, 0, sizeof(buff));
     memset(type, 0, sizeof(type));
+    //send to server
     printf("%s\n", tooServer);
   }
 
