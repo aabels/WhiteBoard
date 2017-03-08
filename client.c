@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <strings.h>
 
-#define	 MY_PORT  2224
+#define	 MY_PORT  2229
 
 /* ---------------------------------------------------------------------
  This is a sample client program for the number server. The client and
@@ -18,6 +18,7 @@ int main()
 {
 	int	s, number;
 	char msg[100];
+	char * Fupdate = "@12p4\ncool\n";
 
 	struct	sockaddr_in	server;
 
@@ -58,8 +59,10 @@ int main()
 		recv(s, msg, 100, 0);
 		//printf("After recv\n");
 		printf("%s\n", msg);
+		sleep (2);
+		send(s,Fupdate, 100, 0);
+		sleep(2);
 		close (s);
 		//fprintf (stderr, "Process %d gets number %d\n", getpid (), ntohl (number));
-		sleep (2);
 	//}
 }

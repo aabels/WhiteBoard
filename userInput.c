@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #define OK       0
 #define NO_INPUT 1
@@ -38,6 +39,7 @@ int main( int argc, char* argv[]) {
   int rc;
   char buff[100], tooServer[1024], type[2];
 
+
   rc = getLine ("Enter...find | update | clean: ", buff, sizeof(buff));
   if (rc == NO_INPUT) {
       printf ("No input\n");
@@ -72,9 +74,45 @@ int main( int argc, char* argv[]) {
     memset(buff, 0, sizeof(buff));
     memset(type, 0, sizeof(type));
     rc = getLine ("Enter your message. ", buff, sizeof(buff));
-    sprintf(tooServer+ strlen(tooServer),"%d\n%s\n", strlen(buff), buff);
+    sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(buff), buff);
     //send to server
     printf("%s\n", tooServer);
+
+    char * handle[1];
+    long int action[2];
+    char command[1024];
+    char *p;
+
+    //command segment here
+    handle[0] = strtok (tooServer, "\n");
+    //message segment here
+    handle[1] = strtok (NULL, "\n");
+    printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
+
+    //used to get the msg length and entry number as integers
+    strcpy(command, handle[0]);
+    if (strncmp(command, "@", 1)==0) {
+      printf("This is a update\n");
+    }
+    if (strncmp(command, "?", 1)==0) {
+      printf("This is a query\n");
+    }
+    printf("%s\n",command);
+    p = command;
+    int count = 0;
+    while (*p) {
+      if (isdigit(*p)) {
+        long val = strtol(p, &p, 10);
+        action[count] = val;
+        printf("TEST\n");
+        count++;
+      }
+      else {
+        p++;
+      }
+    }
+    printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
+
   }
   if (strcmp(buff, CLEAN)== 0) {
     memset(buff, 0, sizeof(buff));

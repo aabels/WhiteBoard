@@ -8,8 +8,9 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <ctype.h>
 
-#define	MY_PORT	2224
+#define	MY_PORT	2229
 #define ENTRY_SIZE 25
 #define NUM_THREADS 25
 
@@ -20,8 +21,59 @@ unsigned int snew;
 char ** entry;
 FILE* statefile;
 void init_board(FILE *statefile);
+void * handle_client (void * snew);
+void * process_task (void * socket, char * prompt);
 
-int fib(int n){
+void * process_task (void * socket, char * prompt) {
+	int connection = *(int *) socket;
+	char * task;
+	char * handle[1];
+    long int action[2];
+    char command[1024];
+    char *p;
+	//fib(30);
+    task = (char *) prompt;
+    //command segment here
+    handle[0] = strtok (task, "\n");
+    //message segment here
+    handle[1] = strtok (NULL, "\n");
+    printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
+
+    strcpy(command, handle[0]);
+	//check if its a query '?' or '@'
+    if (strncmp(command, "@", 1)==0) {
+      printf("This is a update\n");
+    }
+    if (strncmp(command, "?", 1)==0) {
+      printf("This is a query\n");
+    }
+    printf("%s\n",command);
+    //used to get the msg length and entry number as integers
+    p = command;
+    int count = 0;
+    int flag = 0;
+    char type[20];
+    while (*p) {
+		if (isdigit(*p)) {
+			long val = strtol(p, &p, 10);
+			action[count] = val;
+			count++;
+			int flag = 1;
+		}
+		if (isalpha(*p)) {
+			strncpy(type, &(*p), 1);
+			printf("Do I go in\n");
+		}
+		
+		p++;
+
+	}	
+    printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], type);
+	return (void *) 0;
+
+}
+
+int fib (int n){
     if ((n == 0) | (n == 1))
         return 1;
     return fib(n-1) + fib(n-2);
@@ -31,12 +83,22 @@ void * handle_client (void * snew) {
 	//how do you pass connection into thread func
 	//upon entry server responds with msg and # of entries
 	int socket = *(int *) snew;
-	char prompt[100];
-	fib(30);
+	char prompt[1024];
+	//fib(30);
 	sprintf(prompt,"CMPUT379 Whiteboard Server v0\\n%d\n",entryCAP);
 	send(socket,prompt, 100, 0);
-	close(socket);
 	sleep(1);
+	//I want to recieve a command here
+	for (;;) {
+		//printf("Do i go in,\n");
+		bzero(prompt, 1024);
+		recv(socket, prompt, sizeof(prompt), 0);
+		printf("value of prompt %s\n", prompt);
+		process_task( (void*) &socket, (char*) prompt);
+		
+	}
+	
+	close(socket);
 
 	return (void *) 0;
 }
@@ -127,7 +189,7 @@ int main(int argc, char* argv[]){
 	master.sin_addr.s_addr = INADDR_ANY;
 	master.sin_port = htons (MY_PORT);
 
-	//crate a socket and associate local address and port with the socket
+	//create a socket and associate local address and port with the socket
 	if (bind (socky, (struct sockaddr *) &master, sizeof (master))) { //returns 0 on success -1 on error
 		perror ("Server: cannot bind master socket");
 		exit(1);
@@ -164,7 +226,7 @@ void init_board (FILE * input) {
 		}
 		statefile = fopen("statefile.txt", "w+");
 		for (k=0; k <= entryCAP -1; k++) {
-			fprintf(statefile, "!%dp%d\n%s\n",k, strlen(entry[k]), entry[k]);
+			fprintf(statefile, "!%dp%lu\n%s\n",k, strlen(entry[k]), entry[k]);
 		}
 		fclose(statefile);
 	}
