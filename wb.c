@@ -31,16 +31,13 @@ void * handle_client (void * snew) {
 	//how do you pass connection into thread func
 	//upon entry server responds with msg and # of entries
 	int socket = *(int *) snew;
-	//char * whiteboard = (char *) wb_ptr;
 	char prompt[100];
-	//printf("DID WE GET HERE enrty cap %d\n", entryCAP);
 	fib(30);
 	sprintf(prompt,"CMPUT379 Whiteboard Server v0\\n%d\n",entryCAP);
-	//printf("%s\n", prompt);
-	//write(snew, prompt, strlen(prompt));
 	send(socket,prompt, 100, 0);
 	close(socket);
 	sleep(1);
+
 	return (void *) 0;
 }
 
@@ -147,7 +144,6 @@ int main(int argc, char* argv[]){
 			exit (1);
 		}
 
-		//how does the server know when a new client has connected
 		//a pthread is created for each new Client
 		pthread_create(&thread[open_e], NULL, handle_client, (void *) &snew);
 		open_e++;
