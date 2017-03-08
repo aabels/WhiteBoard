@@ -78,10 +78,9 @@ int main( int argc, char* argv[]) {
     sprintf(tooServer, "@%s", buff);
     //Does it matter if the entry was p or e to clean?
     rc = getLine ("(c or p): ", type, sizeof(type));
-    sprintf(tooServer+strlen(tooServer),"%s",type);
+    sprintf(tooServer+strlen(tooServer),"%s\n\n",type);
     memset(buff, 0, sizeof(buff));
     memset(type, 0, sizeof(type));
-    sprintf(tooServer+ strlen(tooServer),"%d\n%s\n", strlen(buff), buff);
     printf("%s\n", tooServer);
   }
 
