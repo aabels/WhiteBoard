@@ -5,6 +5,9 @@
 #define OK       0
 #define NO_INPUT 1
 #define TOO_LONG 2
+#define QUERY "find"
+#define UPDATE "update"
+#define CLEAN "clean"
 
 static int getLine (char *prmpt, char *buff, size_t sz) {
     int ch, extra;
@@ -33,9 +36,9 @@ static int getLine (char *prmpt, char *buff, size_t sz) {
 
 int main( int argc, char* argv[]) {
   int rc;
-  char buff[10];
+  char buff[100], tooServer[1024], type[2];
 
-  rc = getLine ("Enter string> ", buff, sizeof(buff));
+  rc = getLine ("Enter...find | update | clean: ", buff, sizeof(buff));
   if (rc == NO_INPUT) {
       printf ("No input\n");
       return 1;
@@ -45,8 +48,42 @@ int main( int argc, char* argv[]) {
       printf ("Input too long\n");
       return 1;
   }
+  if (strcmp(buff,QUERY)== 0) {
+    memset(buff, 0, sizeof(buff));
+    rc = getLine ("Enter specified entry number: ", buff, sizeof(buff));
+    printf ("Entry number:  [%s]\n", buff);
+    sprintf(tooServer, "?%s\n", buff);
+    printf("%s\n", tooServer);
+  }
+  if (strcmp(buff,UPDATE)== 0) {
+    memset(buff, 0, sizeof(buff));
+    rc = getLine ("Enter entry number to update: ", buff, sizeof(buff));
+    printf ("Entry number:  [%s]\n", buff);
+    sprintf(tooServer, "@%s", buff);
 
-  printf ("OK [%s]\n", buff);
+    rc = getLine ("(c or p): ", type, sizeof(type));
+    sprintf(tooServer+strlen(tooServer),"%s",type);
+    printf("%s\n", tooServer);
+
+    memset(buff, 0, sizeof(buff));
+    memset(type, 0, sizeof(type));
+    rc = getLine ("Enter your message. ", buff, sizeof(buff));
+    sprintf(tooServer+ strlen(tooServer),"%d\n%s\n", strlen(buff), buff);
+    printf("%s\n", tooServer);
+  }
+  if (strcmp(buff, CLEAN)== 0) {
+    memset(buff, 0, sizeof(buff));
+    memset(type, 0, sizeof(type));
+    rc = getLine ("Enter entry number to clean: ", buff, sizeof(buff));
+    sprintf(tooServer, "@%s", buff);
+    //Does it matter if the entry was p or e to clean?
+    rc = getLine ("(c or p): ", type, sizeof(type));
+    sprintf(tooServer+strlen(tooServer),"%s",type);
+    memset(buff, 0, sizeof(buff));
+    memset(type, 0, sizeof(type));
+    sprintf(tooServer+ strlen(tooServer),"%d\n%s\n", strlen(buff), buff);
+    printf("%s\n", tooServer);
+  }
 
   return 0;
 }
