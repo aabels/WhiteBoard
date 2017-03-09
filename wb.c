@@ -12,15 +12,17 @@
 
 #define	MY_PORT	2229
 #define ENTRY_SIZE 25
-#define NUM_THREADS 25
+#define NUM_THREADS 1
 
 pthread_t thread[NUM_THREADS];
-int id[NUM_THREADS];
 int entryCAP = 0;
 unsigned int snew;
 char ** entry;
+
 FILE* statefile;
 void init_board(FILE *statefile);
+void free_board (char ** wb);
+int fib (int n);
 void * handle_client (void * snew);
 void * process_task (void * socket, char * prompt);
 
@@ -29,7 +31,7 @@ void * process_task (void * socket, char * prompt) {
 	char * task;
 	char * handle[1];
     long int action[2];
-    char command[1024];
+    char command[1024], query[1024], result[1024];
     char *p;
 	//fib(30);
     task = (char *) prompt;
@@ -37,38 +39,60 @@ void * process_task (void * socket, char * prompt) {
     handle[0] = strtok (task, "\n");
     //message segment here
     handle[1] = strtok (NULL, "\n");
-    printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
+    //printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
 
     strcpy(command, handle[0]);
-	//check if its a query '?' or '@'
-    if (strncmp(command, "@", 1)==0) {
-      printf("This is a update\n");
-    }
-    if (strncmp(command, "?", 1)==0) {
-      printf("This is a query\n");
-    }
-    printf("%s\n",command);
+    
+    //printf("%s\n",command);
     //used to get the msg length and entry number as integers
     p = command;
-    int count = 0;
-    int flag = 0;
+    int count = 0, flag =0;
     char type[20];
     while (*p) {
 		if (isdigit(*p)) {
 			long val = strtol(p, &p, 10);
 			action[count] = val;
 			count++;
-			int flag = 1;
 		}
 		if (isalpha(*p)) {
-			strncpy(type, &(*p), 1);
-			printf("Do I go in\n");
+			flag = 1;
+			if (flag){
+				printf("test\n");
+				strncpy(type, &(*p), 1);
+				flag = 0;
+			}
+			//printf("Do I go in\n");
 		}
-		
 		p++;
-
 	}	
-    printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], type);
+    //printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], type);
+	//check if its a query '?' or '@'
+	if (strncmp(command, "?", 1)==0) {
+		//check if the entry exists (is valid) if not return error to client
+    	printf("This is a query\n");
+    	//to accomodate the entry numbers starting at 1
+    	action[0] = action[0] - 1;
+    	//locate query here with wb[index] and send results to client
+    	//using the size of result bc no extra allocation implimented yet
+    	sprintf(result+strlen(result), "!%lu%s%lu\n", action[0], type, action[1]);
+    	memcpy((void *)query, (const void *)entry[action[0]], sizeof(query));
+    	sprintf(result+strlen(result), "%s\n", query);
+    	printf("query is: %s and result is: %s\n", query, result);
+    	send(connection, result, 1024, 0);
+    	memset(result, 0, sizeof(result));
+    	memset(query, 0, sizeof(query));
+    	fib(30);
+    	sleep(2);
+
+    }
+    else if (strncmp(command, "@", 1)==0) {
+    	printf("This is a update\n");
+    }
+    else {
+    	//return an error to the client here
+    	printf("A syntactical error occured\n");
+    }
+    pthread_exit(0);
 	return (void *) 0;
 
 }
@@ -84,17 +108,19 @@ void * handle_client (void * snew) {
 	//upon entry server responds with msg and # of entries
 	int socket = *(int *) snew;
 	char prompt[1024];
-	//fib(30);
 	sprintf(prompt,"CMPUT379 Whiteboard Server v0\\n%d\n",entryCAP);
 	send(socket,prompt, 100, 0);
 	sleep(1);
+
 	//I want to recieve a command here
 	for (;;) {
-		//printf("Do i go in,\n");
 		bzero(prompt, 1024);
 		recv(socket, prompt, sizeof(prompt), 0);
-		printf("value of prompt %s\n", prompt);
-		process_task( (void*) &socket, (char*) prompt);
+		printf("test, value of prompt: %s\n", prompt);
+		//printf("value of prompt %s\n", prompt);
+		if (prompt != NULL){
+			process_task( (void*) &socket, (char*) prompt);
+		}
 		
 	}
 	
@@ -228,6 +254,7 @@ void init_board (FILE * input) {
 		for (k=0; k <= entryCAP -1; k++) {
 			fprintf(statefile, "!%dp%lu\n%s\n",k, strlen(entry[k]), entry[k]);
 		}
+		entry[11] = "thisIsASercret\n";
 		fclose(statefile);
 	}
 }

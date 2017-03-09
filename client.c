@@ -18,10 +18,10 @@ int main()
 {
 	int	s, number;
 	char msg[100];
-	char * Fupdate = "@12p4\ncool\n";
+	char * Fupdate = "?12p\n";
+	//update:"@12p4\ncool\n";
 
 	struct	sockaddr_in	server;
-
 	struct	hostent		*host;
 
 	host = gethostbyname ("localhost");
@@ -48,20 +48,20 @@ int main()
 			perror ("Client: cannot connect to server");
 			exit (1);
 		}
-		//if client say wants to look at the 12th entry
-		//has a protocol
-		//''?12\n'  have to add newline char
-		//servre sends
-		//@12p5\Hello\n
-		//read (s, &number, sizeof (number));
+		
+		printf("sending: %s \n", Fupdate);
 		bzero(msg, 100);
-		//printf("before recv\n");
 		recv(s, msg, 100, 0);
-		//printf("After recv\n");
 		printf("%s\n", msg);
 		sleep (2);
+
 		send(s,Fupdate, 100, 0);
 		sleep(2);
+
+		bzero(msg, 100);
+		recv(s, msg, 100, 0);
+		printf("%s\n", msg);
+		sleep (2);
 		close (s);
 		//fprintf (stderr, "Process %d gets number %d\n", getpid (), ntohl (number));
 	//}
