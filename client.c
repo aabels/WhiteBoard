@@ -48,20 +48,23 @@ int main()
 			perror ("Client: cannot connect to server");
 			exit (1);
 		}
-		
+		//Recieving First HandShake Here
 		printf("sending: %s \n", Fupdate);
 		bzero(msg, 100);
 		recv(s, msg, 100, 0);
 		printf("%s\n", msg);
 		sleep (2);
 
+		//Sending Query Here
 		send(s,Fupdate, 100, 0);
 		sleep(2);
 
+		//Recieving the completed task
 		bzero(msg, 100);
 		recv(s, msg, 100, 0);
 		printf("%s\n", msg);
 		sleep (2);
+		
 		close (s);
 		//fprintf (stderr, "Process %d gets number %d\n", getpid (), ntohl (number));
 	//}
