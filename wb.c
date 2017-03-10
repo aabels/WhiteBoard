@@ -1,28 +1,28 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include <fcntl.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <ctype.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
-#define	MY_PORT	2229
-#define ENTRY_SIZE 25
-#define NUM_THREADS 1
+#define NUM_THREADS	1
+#define ENTRY_SIZE 	25
+#define	MY_PORT		2222
 
-pthread_t thread[NUM_THREADS];
+char ** entry;
 int entryCAP = 0;
 unsigned int snew;
-char ** entry;
+pthread_t thread[NUM_THREADS];
 
-FILE* statefile;
-void init_board(FILE *statefile);
-void free_board (char ** wb);
 int fib (int n);
+FILE* statefile;
+void free_board (char ** wb);
+void init_board(FILE *statefile);
 void * handle_client (void * snew);
 void * process_task (void * socket, char * prompt);
 
@@ -39,11 +39,9 @@ void * process_task (void * socket, char * prompt) {
     handle[0] = strtok (task, "\n");
     //message segment here
     handle[1] = strtok (NULL, "\n");
-    //printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
 
     strcpy(command, handle[0]);
     
-    //printf("%s\n",command);
     //used to get the msg length and entry number as integers
     p = command;
     int count = 0, flag =0;
@@ -57,44 +55,65 @@ void * process_task (void * socket, char * prompt) {
 		if (isalpha(*p)) {
 			flag = 1;
 			if (flag){
-				printf("test\n");
+				printf("test entered isalpha\n");
 				strncpy(type, &(*p), 1);
 				flag = 0;
 			}
-			//printf("Do I go in\n");
 		}
 		p++;
-	}	
-    //printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], type);
+	}
 	//check if its a query '?' or '@'
-	if (strncmp(command, "?", 1)==0) {
-		//check if the entry exists (is valid) if not return error to client
-    	printf("This is a query\n");
-    	//to accomodate the entry numbers starting at 1
-    	action[0] = action[0] - 1;
-    	//locate query here with wb[index] and send results to client
-    	//using the size of result bc no extra allocation implimented yet
-    	sprintf(result+strlen(result), "!%lu%s%lu\n", action[0], type, action[1]);
-    	memcpy((void *)query, (const void *)entry[action[0]], sizeof(query));
-    	sprintf(result+strlen(result), "%s\n", query);
-    	printf("query is: %s and result is: %s\n", query, result);
+	if (action[0] > ENTRY_SIZE){
+		sprintf(result+strlen(result), "!%lue14\nNo such entry! \n", action[0]);
     	send(connection, result, 1024, 0);
     	memset(result, 0, sizeof(result));
-    	memset(query, 0, sizeof(query));
     	fib(30);
     	sleep(2);
-
-    }
-    else if (strncmp(command, "@", 1)==0) {
-    	printf("This is a update\n");
     }
     else {
-    	//return an error to the client here
-    	printf("A syntactical error occured\n");
-    }
+    	if (strncmp(command, "?", 1)==0) {
+			//check if the entry exists (is valid) if not return error to client
+	    	printf("This is a query\n");
+	    	//to accomodate the entry numbers starting at 1
+
+	    // TOLU COMMENTED THIS OUT: action[0] = action[0] - 1; *****************
+
+	    	//locate query here with wb[index] and send results to client
+	    	//using the size of result bc no extra allocation implimented yet
+			
+			// hardcode line below for now
+			strncpy(type, "p", 1);
+	    	sprintf(result+strlen(result), "!%lu%s%lu\n", action[0], type, action[1]);
+	    	memcpy((void *)query, (const void *)entry[action[0]], sizeof(query));
+	    	sprintf(result+strlen(result), "%s\n", query);
+	    	//printf("query is: %s and result is: %s\n", query, result);
+	    	send(connection, result, 1024, 0);
+	    	memset(result, 0, sizeof(result));
+	    	memset(query, 0, sizeof(query));
+	    	fib(30);
+	    	sleep(2);
+	    }
+	    else if (strncmp(command, "@", 1)==0) {
+	    	printf("This is a update\n");
+	    	// hardcode line below for now
+	    	strncpy(type, "p", 1);
+	    	sprintf(result+strlen(result), "@%lu%s%lu\n", action[0], type, action[1]);
+	    	memcpy((void *)query, (const void *)entry[action[0]], sizeof(query));
+	    	sprintf(result+strlen(result), "%s\n", query);
+	    	//printf("query is: %s and result is: %s\n", query, result);
+	    	send(connection, result, 1024, 0);
+	    	memset(result, 0, sizeof(result));
+	    	memset(query, 0, sizeof(query));
+	    	fib(30);
+	    	sleep(2);
+	    }
+	    else {
+	    	//return an error to the client here
+	    	printf("A syntactical error occured\n");
+	    }
+	}
     pthread_exit(0);
 	return (void *) 0;
-
 }
 
 int fib (int n){
@@ -108,7 +127,7 @@ void * handle_client (void * snew) {
 	//upon entry server responds with msg and # of entries
 	int socket = *(int *) snew;
 	char prompt[1024];
-	sprintf(prompt,"CMPUT379 Whiteboard Server v0\\n%d\n",entryCAP);
+	//sprintf(prompt,"CMPUT379 Whiteboard Server v0\\n%d\n",entryCAP);
 	send(socket,prompt, 100, 0);
 	sleep(1);
 
@@ -121,17 +140,15 @@ void * handle_client (void * snew) {
 		if (prompt != NULL){
 			process_task( (void*) &socket, (char*) prompt);
 		}
-		
 	}
 	
 	close(socket);
-
 	return (void *) 0;
 }
 
 int main(int argc, char* argv[]){
 
-	int socky, snew, fromlength, open_e, settings_flag;							//129.128.41.20
+	int socky, snew, fromlength, open_e, settings_flag;
 
 	char * options[1];
 
@@ -189,15 +206,13 @@ int main(int argc, char* argv[]){
 				}
 				printf("Wb entry max size.%d\n", entryCAP);
 				settings_flag = 1;
-				}
+			}
 		}
 		else {
 			printf("Something went wrong please re-type specifications.\n");
 			exit(1);
 		}
 	}
-
-
 
 	//creates an endpoint for communication and return a file descriptor = socky
 	socky = socket (AF_INET, SOCK_STREAM, 0);//AFI_NET (IPv4) protocol family, SOCK_STREAM (reliabletwo way connection)
@@ -236,10 +251,7 @@ int main(int argc, char* argv[]){
 		pthread_create(&thread[open_e], NULL, handle_client, (void *) &snew);
 		open_e++;
 	}
-
-
 }
-
 
 void init_board (FILE * input) {
 	int i,k;
@@ -254,7 +266,7 @@ void init_board (FILE * input) {
 		for (k=0; k <= entryCAP -1; k++) {
 			fprintf(statefile, "!%dp%lu\n%s\n",k, strlen(entry[k]), entry[k]);
 		}
-		entry[11] = "thisIsASercret\n";
+		entry[11] = "thisIsASecret\n";
 		fclose(statefile);
 	}
 }
@@ -266,14 +278,6 @@ void free_board (char ** wb) {
 	}
 	free(entry);
 }
-
-
-
-
-
-
-
-
 
 /*websites for notes:
 https://linux.die.net/man/2/socket
