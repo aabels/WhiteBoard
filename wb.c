@@ -18,6 +18,7 @@ pthread_t thread[NUM_THREADS];
 int entryCAP = 0;
 unsigned int snew;
 char ** entry;
+char ** det;
 
 FILE* statefile;
 void init_board(FILE *statefile);
@@ -28,55 +29,116 @@ void * process_task (void * socket, char * prompt);
 
 void * process_task (void * socket, char * prompt) {
 	int connection = *(int *) socket;
+	int index = 0;
 	char * task;
+	char const empty_msg[] = "Empty\n";
 	char * handle[1];
+	char * sendback[1];
     long int action[2];
+    long int action2[2];
     char command[1024], query[1024], result[1024];
     char *p;
+    int count = 0, flag =0;
+	char type[20], newtype[2];
 	//fib(30);
     task = (char *) prompt;
     //command segment here
     handle[0] = strtok (task, "\n");
     //message segment here
     handle[1] = strtok (NULL, "\n");
-    //printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
-
+    //meaning if its not a query grab the type, len, and entry #
     strcpy(command, handle[0]);
-    
-    //printf("%s\n",command);
-    //used to get the msg length and entry number as integers
-    p = command;
-    int count = 0, flag =0;
-    char type[20];
-    while (*p) {
-		if (isdigit(*p)) {
-			long val = strtol(p, &p, 10);
-			action[count] = val;
-			count++;
-		}
-		if (isalpha(*p)) {
-			flag = 1;
-			if (flag){
-				printf("test\n");
-				strncpy(type, &(*p), 1);
-				flag = 0;
+	printf("Do I go in\n");
+	p = command;
+    printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
+    if (handle[1] != NULL) {
+	    while (*p) {
+			if (isdigit(*p)) {
+				long val = strtol(p, &p, 10);
+				action[count] = val;
+				count++;
 			}
-			//printf("Do I go in\n");
+			if (isalpha(*p)) {
+				flag = 1;
+				if (flag){
+					printf("test\n");
+					strncpy(type, &(*p), 1);
+					flag = 0;
+				}
+			}
+			p++;
 		}
-		p++;
-	}	
-    //printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], type);
+	}
+
+    //used to get the msg length and entry number as integers
 	//check if its a query '?' or '@'
 	if (strncmp(command, "?", 1)==0) {
-		//check if the entry exists (is valid) if not return error to client
-    	printf("This is a query\n");
-    	//to accomodate the entry numbers starting at 1
+		while (*p) {
+			if (isdigit(*p)) {
+				long val = strtol(p, &p, 10);
+				action[count] = val;
+				count++;
+			}
+			if (isalpha(*p)) {
+				flag = 1;
+				if (flag){
+					printf("test\n");
+					strncpy(type, &(*p), 1);
+					flag = 0;
+				}
+			}
+			p++;
+		}
     	action[0] = action[0] - 1;
+		//"11p14thisIsASercret\n\n
+		//check if the entry exists (is valid) if not return error to client
+		printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[action[0]]);
+		index = (int) action[0];
+		printf(" Index %d Entry 11 is: %s\n", index, entry[index]);
+    	memcpy((void *)query, (const void *)entry[index], sizeof(char)*50);
+    	if (strlen(entry[index]) == 0) {
+    		printf("hihihihi\n");
+    		send(connection, empty_msg, 5, 0);
+    		return (void *) 0;
+    	}
+    	//strcpy(sendback[0], entry[11]);
+    	printf("Query is: %s\n", query);
+		sendback[0] = strtok (query, "\n");
+		sendback[1] = strtok (NULL, "\n");
+		printf("flag sendback[0]%s sendback[1] %s \n", sendback[0], sendback[1]);
+		strcpy(command, sendback[0]);
+    	strcpy(query, sendback[1]);
+		printf("Cmd %s\n", command);
+		p = command;
+    	//message segment here
+    	//handle[1] = strtok (NULL, "\n");
+    	count =0;
+		while (*p) {
+			if (isdigit(*p)) {
+				long val = strtol(p, &p, 10);
+				action2[count] = val;
+				printf("action count %lu\n", action2[count]);
+				count++;
+			}
+			if (isalpha(*p)) {
+				flag = 1;
+				if (flag){
+					printf("test %s\n", &(*p));
+					strncpy(newtype, &(*p), 1);
+					printf("type %s\n", newtype);
+					flag = 0;
+				}
+			}
+			p++;
+		}
+    	printf("action[0]: %ld action[1]: %ld, type %s\n", action2[0], action2[1], det[action2[0]]);
+    	printf("This is a query of type %s \n", newtype);
+    	//to accomodate the entry numbers starting at 1
     	//locate query here with wb[index] and send results to client
     	//using the size of result bc no extra allocation implimented yet
-    	sprintf(result+strlen(result), "!%lu%s%lu\n", action[0], type, action[1]);
-    	memcpy((void *)query, (const void *)entry[action[0]], sizeof(query));
+    	sprintf(result+strlen(result), "!%ld%s%ld\n", (action2[0]+1), newtype, action2[1]);
     	sprintf(result+strlen(result), "%s\n", query);
+    	printf("this is the query %s\n", sendback[1]);
     	printf("query is: %s and result is: %s\n", query, result);
     	send(connection, result, 1024, 0);
     	memset(result, 0, sizeof(result));
@@ -86,13 +148,27 @@ void * process_task (void * socket, char * prompt) {
 
     }
     else if (strncmp(command, "@", 1)==0) {
-    	printf("This is a update\n");
+    	//need to check if its empty
+    	action[0] = action[0] - 1;
+		//"11p14thisIsASercret\n\n
+		//check if the entry exists (is valid) if not return error to client
+		printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[action[0]]);
+		index = (int) action[0];
+		printf(" Index %d Entry %d is: %s\n", index, index, entry[index]);
+    	memcpy((void *)query, (const void *)entry[index], sizeof(char)*50);
+    	if (strlen(query)== 0) {
+    		//store the new entry immediatly and keep track of the type[index]
+    		printf("success\n");
+    	}
+    	//if not we need to clean the entry
+
+    	//store new entry
     }
     else {
     	//return an error to the client here
     	printf("A syntactical error occured\n");
     }
-    pthread_exit(0);
+    
 	return (void *) 0;
 
 }
@@ -123,7 +199,7 @@ void * handle_client (void * snew) {
 		}
 		
 	}
-	
+	pthread_exit(0);
 	close(socket);
 
 	return (void *) 0;
@@ -247,14 +323,18 @@ void init_board (FILE * input) {
 	if (input == NULL) {
 		//printf("Entry Cap = %d\n", entryCAP);
 		entry = (char **) malloc (entryCAP*sizeof(char*));
+		det = (char **) malloc (entryCAP*sizeof(char*));
 		for (i=0; i <= entryCAP-1; i++) {
-			entry[i] = (char *) malloc (100*sizeof(char));
+			entry[i] = (char *) malloc (1024*sizeof(char));
+			det[i] = (char *) malloc (1*sizeof(char));
 		}
 		statefile = fopen("statefile.txt", "w+");
 		for (k=0; k <= entryCAP -1; k++) {
+			det[k] = "p";
 			fprintf(statefile, "!%dp%lu\n%s\n",k, strlen(entry[k]), entry[k]);
 		}
-		entry[11] = "thisIsASercret\n";
+		entry[11] = "11p14\nthisIsASercret\n";
+		entry[4] = "4p6\nilooks\n";
 		fclose(statefile);
 	}
 }
