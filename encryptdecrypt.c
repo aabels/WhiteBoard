@@ -163,35 +163,51 @@ int do_func(char*input_text, int switch_int){
     char output_text[1024];
     char *collected_key;
     char *base64_encoded;
+    int bytes_to_decode;
     //memset(base64_encoded, 0, sizeof(base64_encoded));
 
-    printf("input_text: %s\n", input_text);
+    // printf("input_text: %s\n", input_text);
     
     if (switch_int == 1){
         text = do_crypt(input_text);
-        printf("User Input: %s\n", input_text);
-        printf("Encryption: %s\n", text);
+        //printf("User Input: %s\n", input_text);
+        //printf("Encryption: %s\n", text);
         char *data_to_encode;
         data_to_encode = text;
 
         int bytes_to_encode = encrypted_count; //Number of bytes in string to base64 encode.
         base64_encoded = base64encode(data_to_encode, bytes_to_encode);   //Base-64 encoding.
+        bytes_to_decode = strlen(base64_encoded);
+        //printf("base64_encoded: %s, %d\n", base64_encoded, encrypted_count);
         // printf("Base-64 encoded string is: %s\n", base64_encoded);  //Prints base64 encoded string.
-        str_to_send = malloc(encrypted_count);
-        memcpy(str_to_send, base64_encoded, encrypted_count);
-        free(base64_encoded);                //Frees up the memory holding our base64 encoded data.
+        str_to_send = malloc(bytes_to_decode);
+        memset(str_to_send, 0, bytes_to_decode);
+        //printf("correct: %s, len bytes_to_decode %d\n", base64_encoded, bytes_to_decode);
+        strcpy(str_to_send, base64_encoded);
+       // printf("what happened?: %s, %d\n", str_to_send, bytes_to_decode);
+        //free(base64_encoded);                //Frees up the memory holding our base64 encoded data.
     }
     else if (switch_int == 2){
-        memcpy(base64_encoded, input_text, strlen((const char*)input_text));
+        //printf("str_to_send: %s, %d\n", input_text, strlen(input_text));
+        memcpy(base64_encoded, input_text, strlen(input_text));
 
-        int bytes_to_decode = strlen(base64_encoded); //Number of bytes in string to base64 decode.
+        bytes_to_decode = strlen(base64_encoded); //Number of bytes in string to base64 decode.
         char *base64_decoded = base64decode(base64_encoded, bytes_to_decode);   //Base-64 decoding.
-        printf("Base-64 decoded string is: %s\n", base64_decoded);  //Prints base64 decoded string.
+        //printf("Base-64 decoded string is: %s\n", base64_decoded);  //Prints base64 decoded string.
 
 
         fp1 = fopen("key.txt","r");
         if(fp1 == NULL)
         {
+            str_to_send = malloc(54);
+            decrypted_count = 54;
+            char* err_msg_1 = malloc(54);
+            strcpy(err_msg_1, "Content could not be decrypted. Please use valid key\n");
+            strncpy(output_text, err_msg_1, 54);
+            output_text[decrypted_count] = 0;
+            memcpy(str_to_send, output_text, decrypted_count);
+            bzero(output_text, 54);
+            free(err_msg_1);
             printf("\nError reading file\n");
             exit(0);
         }
@@ -205,23 +221,29 @@ int do_func(char*input_text, int switch_int){
             if (detext != NULL){
                 strncpy(output_text, detext, decrypted_count);
                 output_text[decrypted_count] = 0;
-                printf("Key [%d] worked: \n%s\n", i, output_text);
-                bzero(output_text, decrypted_count);
+                
                 bzero(detext, decrypted_count);
+                str_to_send = malloc(decrypted_count);
                 break;
-            }
-            else{
-                printf("Key [%d] did not work\n", i);
             }
             i++;
         }
         if (i == number_of_keys){
-            printf("Out of keys to try! Sorry, not this time. Try again later.\n");
+            //printf("number_of_keys: %d\n", number_of_keys);
+            str_to_send = malloc(54);
+            decrypted_count = 54;
+            char* err_msg_1 = malloc(54);
+            strcpy(err_msg_1, "Content could not be decrypted. Please use valid key\n");
+            strncpy(output_text, err_msg_1, 54);
+            output_text[decrypted_count] = 0;
+            bzero(output_text, 54);
+            free(err_msg_1);
         }
         
-        str_to_send = malloc(encrypted_count);
-        memcpy(str_to_send, base64_decoded, decrypted_count);
+        
+        memcpy(str_to_send, output_text, decrypted_count);
         free(base64_decoded);                //Frees up the memory holding our base64 decoded data.
+        bzero(output_text, decrypted_count);
     }
 
     return 0;

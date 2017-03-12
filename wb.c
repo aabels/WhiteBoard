@@ -26,20 +26,23 @@ void free_board (char ** wb);
 int fib (int n);
 void * handle_client (void * snew);
 void * process_task (void * socket, char * prompt);
+long ** cmd_parse (char * string);
 
 void * process_task (void * socket, char * prompt) {
 	int connection = *(int *) socket;
 	int index = 0;
 	char * task;
 	char const empty_msg[] = "Empty\n";
+	char const ranng_msg[] = "That entry number does not exist\n";
+	char const suc_msg[] = "!";
 	char * handle[1];
 	char * sendback[1];
     long int action[2];
     long int action2[2];
-    char command[1024], query[1024], result[1024];
+    char command[1024], query[1024], result[1024], error_msg[1024];
     char *p;
     int count = 0, flag =0;
-	char type[20], newtype[2];
+	char type[2], newtype[2];
 	//fib(30);
     task = (char *) prompt;
     //command segment here
@@ -48,10 +51,13 @@ void * process_task (void * socket, char * prompt) {
     handle[1] = strtok (NULL, "\n");
     //meaning if its not a query grab the type, len, and entry #
     strcpy(command, handle[0]);
-	printf("Do I go in\n");
+	//printf("Do I go in\n");
 	p = command;
+	action[0] = 0;
+	action[1] = 0;
     printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
-    if (handle[1] != NULL) {
+    
+    if (handle[1] != NULL){
 	    while (*p) {
 			if (isdigit(*p)) {
 				long val = strtol(p, &p, 10);
@@ -89,88 +95,100 @@ void * process_task (void * socket, char * prompt) {
 			}
 			p++;
 		}
+		if (action[0]==0){
+			printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
+			send(connection, ranng_msg, 32, 0);
+	    	return (void *) 0;
+		}
     	action[0] = action[0] - 1;
-		//"11p14thisIsASercret\n\n
 		//check if the entry exists (is valid) if not return error to client
 		printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[action[0]]);
 		index = (int) action[0];
-		printf(" Index %d Entry 11 is: %s\n", index, entry[index]);
-    	memcpy((void *)query, (const void *)entry[index], sizeof(char)*50);
+    	memcpy((void *)query, (const void *)entry[index], sizeof(char)*1000);
+
     	if (strlen(entry[index]) == 0) {
-    		printf("hihihihi\n");
-    		send(connection, empty_msg, 5, 0);
+    		printf("test\n");
+    		bzero(error_msg, 0);
+    		sprintf(error_msg+strlen(error_msg), "!%lup0\n",(action[0]+1));
+    		printf("too server %s\n", error_msg);
+    		send(connection, error_msg, 40, 0);
+    		memset(error_msg, 0, 1024);
     		return (void *) 0;
     	}
+    	if (index > entryCAP){
+    		send(connection, ranng_msg, 32, 0);
+    		return (void *) 0;
+    	}
+    	//tolucheckpoint
     	//strcpy(sendback[0], entry[11]);
     	printf("Query is: %s\n", query);
-		sendback[0] = strtok (query, "\n");
-		sendback[1] = strtok (NULL, "\n");
-		printf("flag sendback[0]%s sendback[1] %s \n", sendback[0], sendback[1]);
-		strcpy(command, sendback[0]);
-    	strcpy(query, sendback[1]);
-		printf("Cmd %s\n", command);
-		p = command;
-    	//message segment here
-    	//handle[1] = strtok (NULL, "\n");
-    	count =0;
-		while (*p) {
-			if (isdigit(*p)) {
-				long val = strtol(p, &p, 10);
-				action2[count] = val;
-				printf("action count %lu\n", action2[count]);
-				count++;
-			}
-			if (isalpha(*p)) {
-				flag = 1;
-				if (flag){
-					printf("test %s\n", &(*p));
-					strncpy(newtype, &(*p), 1);
-					printf("type %s\n", newtype);
-					flag = 0;
-				}
-			}
-			p++;
-		}
-    	printf("action[0]: %ld action[1]: %ld, type %s\n", action2[0], action2[1], det[action2[0]]);
-    	printf("This is a query of type %s \n", newtype);
+	
+    	printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[action[0]]);
+    	// printf("This is a query of type %s \n", newtype);
     	//to accomodate the entry numbers starting at 1
     	//locate query here with wb[index] and send results to client
     	//using the size of result bc no extra allocation implimented yet
-    	sprintf(result+strlen(result), "!%ld%s%ld\n", (action2[0]+1), newtype, action2[1]);
+    	sprintf(result+strlen(result), "!%ld%s%ld\n", (action[0]+1), type, action[1]);
     	sprintf(result+strlen(result), "%s\n", query);
-    	printf("this is the query %s\n", sendback[1]);
+    	// printf("this is the query %s\n", sendback[1]);
     	printf("query is: %s and result is: %s\n", query, result);
     	send(connection, result, 1024, 0);
     	memset(result, 0, sizeof(result));
     	memset(query, 0, sizeof(query));
     	fib(30);
     	sleep(2);
-
     }
     else if (strncmp(command, "@", 1)==0) {
+    	if (action[0]==0 || action[0] > entryCAP){
+			printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
+			send(connection, ranng_msg, 32, 0);
+	    	return (void *) 0;
+		}
+    	//strcpy(command, handle[1]);
     	//need to check if its empty
     	action[0] = action[0] - 1;
+    	
 		//"11p14thisIsASercret\n\n
 		//check if the entry exists (is valid) if not return error to client
-		printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[action[0]]);
 		index = (int) action[0];
-		printf(" Index %d Entry %d is: %s\n", index, index, entry[index]);
-    	memcpy((void *)query, (const void *)entry[index], sizeof(char)*50);
+    	if (index > entryCAP) {
+    		printf("here\n");
+    		send(connection, ranng_msg, 32, 0);
+    		return (void *) 0;
+
+    	}
+    	det[index] = type;
+		printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[index]);
+    	memcpy((void *)query, (const void *)entry[index], sizeof(char)*action[1]);
     	if (strlen(query)== 0) {
     		//store the new entry immediatly and keep track of the type[index]
+    		memset(entry[index], 0, sizeof(char)*50);
+    		memcpy((void *)entry[index], (const void *)handle[1], sizeof(char)*action[1]);
+    		//entry[index] = task;
+    		printf(" Index %d Entry %d is: %s\n", index, index, entry[index]);
     		printf("success\n");
+    		sprintf(error_msg+strlen(error_msg), "%s%lue0", suc_msg, (action[0]+1));
+    		send(connection, error_msg, 100, 0);
+    		bzero(error_msg, 0);
     	}
-    	//if not we need to clean the entry
+    	else {
+    		memset(entry[index], 0, sizeof(char)*50);
+    		memcpy((void *)entry[index], (const void *)handle[1], sizeof(char)*action[1]);
+    		printf(" Index %d Entry %d is: %s\n", index, index, entry[index]);
+    		printf("success\n");
+    		memset(error_msg, 0, sizeof(error_msg));
 
-    	//store new entry
+    		sprintf(error_msg+strlen(error_msg), "%s%lue0", suc_msg, (action[0]+1));
+    		send(connection, error_msg, 100, 0);
+    	}
     }
-    else {
+    	//if not we need to clean the entry
+    	//store new entry
+  	else {
     	//return an error to the client here
     	printf("A syntactical error occured\n");
     }
-    
-	return (void *) 0;
-
+    	return (void *) 0;
 }
 
 int fib (int n){
@@ -183,14 +201,14 @@ void * handle_client (void * snew) {
 	//how do you pass connection into thread func
 	//upon entry server responds with msg and # of entries
 	int socket = *(int *) snew;
-	char prompt[1024];
-	sprintf(prompt,"CMPUT379 Whiteboard Server v0\\n%d\n",entryCAP);
+	char prompt[10000];
+	sprintf(prompt,"CMPUT379 Whiteboard Server v0\n%d\n",entryCAP);
 	send(socket,prompt, 100, 0);
 	sleep(1);
 
 	//I want to recieve a command here
 	for (;;) {
-		bzero(prompt, 1024);
+		bzero(prompt, 10000);
 		recv(socket, prompt, sizeof(prompt), 0);
 		printf("test, value of prompt: %s\n", prompt);
 		//printf("value of prompt %s\n", prompt);
@@ -332,9 +350,8 @@ void init_board (FILE * input) {
 		for (k=0; k <= entryCAP -1; k++) {
 			det[k] = "p";
 			fprintf(statefile, "!%dp%lu\n%s\n",k, strlen(entry[k]), entry[k]);
+			//printf("Entry %d %s\n", k, entry[k]);
 		}
-		entry[11] = "11p14\nthisIsASercret\n";
-		entry[4] = "4p6\nilooks\n";
 		fclose(statefile);
 	}
 }
@@ -345,6 +362,22 @@ void free_board (char ** wb) {
 		free(entry[j]);
 	}
 	free(entry);
+}
+
+long ** cmd_parse (char * string) {
+	int counter=0;
+	long ** bundle;
+	long value;
+	char * str;
+	str = string;
+	while (*str) {
+		if (isdigit(*str)) {
+			long value = strtol(str, &str, 10);
+			bundle[counter] = (long *) value;
+		}
+		str++;
+	}
+	return bundle;
 }
 
 

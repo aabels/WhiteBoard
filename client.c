@@ -9,10 +9,10 @@
 #include <string.h>
 #include "encryptdecrypt.c"
 
-#define	 MY_PORT  2229
-#define OK       0
-#define NO_INPUT 1
-#define TOO_LONG 2
+#define	 MY_PORT  	2229
+#define OK       	0
+#define NO_INPUT 	1
+#define TOO_LONG 	2
 #define QUERY 		"find"
 #define QUIT_CMND 	"quit"
 #define CLEAN 		"clean"
@@ -91,71 +91,114 @@ int main()
 			//Recieving the completed task
 			bzero(buff, 100);
 			bzero(msg, 1024);
-			recv(s, msg, 1024, 0);
-			printf("%s\n", msg);
-	    	memset(msg, 0, sizeof(msg));
-			memset(buff, 0, sizeof(buff));
-			memset(tooServer, 0, sizeof(tooServer));
-			//depending on if the entry is c or p do something HERE
-			//ie. try to decrypt using the keys in a text file
+			// recv(s, msg, 1024, 0);
+			// printf("received: %s\n", msg);
+
+			
+			if (strncmp(type, c_char, 1)==0) {
+				char * dec_input[1];
+				char * p_1;
+				char command_1[1024];
+				char *temp_msg = (char *) msg;
+			    dec_input[0] = strtok (temp_msg, "\n");
+			    dec_input[1] = strtok (NULL, "\n");
+			    strcpy(command_1, dec_input[0]);
+			    strcpy(buff, dec_input[1]);
+			    p_1 = command_1;
+			    while (*p_1) {
+					if (isalpha(*p_1)) {
+						strncpy(type, &(*p_1), 1);
+					}
+					p_1++;
+				}
+			       	do_func(buff, 2);
+			        char *str1 = get_output();
+			        printf("%s\n", str1);
+			}
+			else {
+				bzero(buff, 0);
+				bzero(msg, 0);
+				memset(msg, 0, sizeof(char)*1024);
+				recv(s, msg, 1024, 0);
+				printf("%s\n", msg);
+				bzero(buff, 0);
+				bzero(msg, 0);
+			}
 	    }
     	else if (strcmp(buff,UPDATE)== 0) {
 	      	memset(buff, 0, sizeof(buff));
 	      	rc = getLine ("Enter entry number to update: ", buff, sizeof(buff));
-			//printf ("Entry number:  [%s]\n", buff);
+			
 			sprintf(tooServer, "@%s", buff);
 			rc = getLine ("(c or p): ", type, sizeof(type));
 			sprintf(tooServer+strlen(tooServer),"%s",type);
 			//depending on if its c or p encrypt or decrypt or just send to server
 			printf("%s\n", tooServer);
 			memset(buff, 0, sizeof(buff));
-			rc = getLine ("Enter your message. ", buff, sizeof(buff));
+			rc = getLine ("Enter your message: ", buff, sizeof(buff));
 
 			if (strncmp(type, c_char, 1)==0){
-		        char* s = malloc(34);
-		        strcpy(s, "CMPUT379 Whiteboard Encrypted v0\n");
-		        prepend(buff, s);
+		        char* not_s = malloc(34);
+		        strcpy(not_s, "CMPUT379 Whiteboard Encrypted v0\n");
+		        prepend(buff, not_s);
 		        do_func(buff, 1);
 		        char *str1 = get_output();
 		        printf("Base-64 encoded string is: %s\n", str1);  //Prints base64 encoded string.
-		        sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(str1), str1);
-		        free(s);
+		        sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(str1) + strlen(tooServer), str1);
+		        printf("tooServer: %s", tooServer);
+		        send(s,tooServer, 1024, 0);
+				bzero(buff, 100);
+				bzero(msg, 1024);
+				recv(s, msg, 1024, 0);
+				printf("%s\n", msg);
+		    	memset(msg, 0, sizeof(msg));
+				memset(buff, 0, sizeof(buff));
+		        free(not_s);
 	      	}
 	      	else if (strncmp(type, p_char, 1)==0){
 	        	sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(buff), buff);
 	        	send(s,tooServer, 100, 0);
+
+	        	bzero(buff, 100);
+				bzero(msg, 1024);
+				recv(s, msg, 1024, 0);
+				printf("%s\n", msg);
+		    	memset(msg, 0, sizeof(msg));
+				memset(buff, 0, sizeof(buff));
+				
+				//break
 	      	}
 	      	memset(type, 0, sizeof(type));
 	      	//send to server
 	      	//printf("%s", tooServer)
 			//command segment here
 			handle[0] = strtok (tooServer, "\n");
-			//message segment here
-			handle[1] = strtok (NULL, "\n");
-			printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
-	      	//used to get the msg length and entry number as integers
-	      	strcpy(command, handle[0]);
-	      	if (strncmp(command, "@", 1)==0) {
-	        	printf("This is a update\n");
-	      	}
-	      	if (strncmp(command, "?", 1)==0) {
-	        	printf("This is a query\n");
-	      	}
-	      	printf("%s\n",command);
-	      	p = command;
-	      	int count = 0;
-	      	while (*p) {
-	        	if (isdigit(*p)) {
-	          		long val = strtol(p, &p, 10);
-	          		action[count] = val;
-	          		printf("TEST\n");
-	          		count++;
-	        	}
-	        	else {
-	          		p++;
-	        	}
-	      	}
-	      	printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
+			if (handle[0] == NULL) {
+				printf("Please Re-Enter your Update MSG\n");
+			}
+			else {
+				//message segment here
+				handle[1] = strtok (NULL, "\n");
+				//printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
+		      	//used to get the msg length and entry number as integers
+		      	strcpy(command, handle[0]);
+		      	//printf("%s\n",command);
+		      	p = command;
+		      	int count = 0;
+		      	while (*p) {
+		        	if (isdigit(*p)) {
+		          		long val = strtol(p, &p, 10);
+		          		action[count] = val;
+		          		//printf("TEST\n");
+		          		count++;
+		        	}
+		        	else {
+		          		p++;
+		        	}
+		      	}
+		      	//printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
+			}
+			memset(tooServer, 0, sizeof(tooServer));
       	}
 	    else if (strcmp(buff, CLEAN)== 0) {
 			memset(buff, 0, sizeof(buff));
