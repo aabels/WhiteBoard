@@ -36,13 +36,12 @@ void * process_task (void * socket, char * prompt) {
 	char const ranng_msg[] = "That entry number does not exist\n";
 	char const suc_msg[] = "!";
 	char * handle[1];
-	char * sendback[1];
+	//char * sendback[1];
     long int action[2];
-    long int action2[2];
     char command[1024], query[1024], result[1024], error_msg[1024];
     char *p;
     int count = 0, flag =0;
-	char type[2], newtype[2];
+	char type[2];
 	//fib(30);
     task = (char *) prompt;
     //command segment here
@@ -57,24 +56,23 @@ void * process_task (void * socket, char * prompt) {
 	action[1] = 0;
     printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
     
-    if (handle[1] != NULL){
-	    while (*p) {
-			if (isdigit(*p)) {
-				long val = strtol(p, &p, 10);
-				action[count] = val;
-				count++;
-			}
-			if (isalpha(*p)) {
-				flag = 1;
-				if (flag){
-					printf("test\n");
-					strncpy(type, &(*p), 1);
-					flag = 0;
-				}
-			}
-			p++;
+    while (*p) {
+		if (isdigit(*p)) {
+			long val = strtol(p, &p, 10);
+			action[count] = val;
+			count++;
 		}
+		if (isalpha(*p)) {
+			flag = 1;
+			if (flag){
+				printf("test\n");
+				strncpy(type, &(*p), 1);
+				flag = 0;
+			}
+		}
+		p++;
 	}
+	printf("action[0]: %ld action[1]: %ld", action[0], action[1]);
 
     //used to get the msg length and entry number as integers
 	//check if its a query '?' or '@'
@@ -83,6 +81,7 @@ void * process_task (void * socket, char * prompt) {
 			if (isdigit(*p)) {
 				long val = strtol(p, &p, 10);
 				action[count] = val;
+				printf("ACtion count %d \n", action[count]);
 				count++;
 			}
 			if (isalpha(*p)) {
@@ -95,17 +94,29 @@ void * process_task (void * socket, char * prompt) {
 			}
 			p++;
 		}
+		printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
+		//Error handling for asking for entry zero
 		if (action[0]==0){
-			printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
-			send(connection, ranng_msg, 32, 0);
+			bzero(error_msg, 0);
+			sprintf(error_msg+strlen(error_msg), "!%lue34\n%s", action[0], ranng_msg);
+			send(connection, error_msg, 40, 0);
+			memset(error_msg, 0, 1024);
 	    	return (void *) 0;
 		}
     	action[0] = action[0] - 1;
-		//check if the entry exists (is valid) if not return error to client
-		printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[action[0]]);
 		index = (int) action[0];
+		//check if the entry exists (is valid) if not return error to client
+    	if (index >= entryCAP){
+			printf("Do we go here\n");
+			bzero(error_msg, 0);
+			sprintf(error_msg+strlen(error_msg), "!%lue34\n%s", (action[0]+1), ranng_msg);
+			send(connection, error_msg, 40, 0);
+			memset(error_msg, 0, 1024);
+    		return (void *) 0;
+    	}
+		printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[action[0]]);
     	memcpy((void *)query, (const void *)entry[index], sizeof(char)*1000);
-
+    	//Error handling for when the entry is empty
     	if (strlen(entry[index]) == 0) {
     		printf("test\n");
     		bzero(error_msg, 0);
@@ -113,10 +124,6 @@ void * process_task (void * socket, char * prompt) {
     		printf("too server %s\n", error_msg);
     		send(connection, error_msg, 40, 0);
     		memset(error_msg, 0, 1024);
-    		return (void *) 0;
-    	}
-    	if (index > entryCAP){
-    		send(connection, ranng_msg, 32, 0);
     		return (void *) 0;
     	}
     	//tolucheckpoint
@@ -129,19 +136,44 @@ void * process_task (void * socket, char * prompt) {
     	//locate query here with wb[index] and send results to client
     	//using the size of result bc no extra allocation implimented yet
     	sprintf(result+strlen(result), "!%ld%s%ld\n", (action[0]+1), type, action[1]);
-    	sprintf(result+strlen(result), "%s\n", query);
+    	sprintf(result+strlen(result), "%s", query);
     	// printf("this is the query %s\n", sendback[1]);
     	printf("query is: %s and result is: %s\n", query, result);
     	send(connection, result, 1024, 0);
     	memset(result, 0, sizeof(result));
     	memset(query, 0, sizeof(query));
-    	fib(30);
-    	sleep(2);
     }
     else if (strncmp(command, "@", 1)==0) {
-    	if (action[0]==0 || action[0] > entryCAP){
+  //   	printf("DO I GO HERE\n");
+		// printf("action[0]: %ld action[1]: %ld", action[0], action[1]);
+
+		//HANDELS CLEARING HERE
+    	if ((action[0]==0  && action[1]==0)) {
+    		action[0] = action[0] - 1;
+    		index = (int) action[0];
+    		if (index >= entryCAP || index == -1) {
+	    		bzero(error_msg, 0);
+				sprintf(error_msg+strlen(error_msg), "!%lue34\n%s", action[0], ranng_msg);
+				send(connection, error_msg, 40, 0);
+				memset(error_msg, 0, 1024);
+	    		return (void *) 0;
+    		}
+    		else {
+    			det[index] = "p";
+    			memset(entry[index], '\0', sizeof(char)* 10000);
+    			printf("entry is %s and det[%d] %s\n", entry[index], index, det[index]);
+    			memset(error_msg, 0, 1024);
+    			return (void *) 0;
+    		}
+
+    	}
+    	if (action[0]==0){
 			printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
-			send(connection, ranng_msg, 32, 0);
+			bzero(error_msg, 0);
+			memset(error_msg, 0, 1024);
+			sprintf(error_msg+strlen(error_msg), "!%lue34\n%s", action[0], ranng_msg);
+			send(connection, error_msg, 40, 0);
+			memset(error_msg, 0, 1024);
 	    	return (void *) 0;
 		}
     	//strcpy(command, handle[1]);
@@ -151,9 +183,11 @@ void * process_task (void * socket, char * prompt) {
 		//"11p14thisIsASercret\n\n
 		//check if the entry exists (is valid) if not return error to client
 		index = (int) action[0];
-    	if (index > entryCAP) {
-    		printf("here\n");
-    		send(connection, ranng_msg, 32, 0);
+    	if (index >= entryCAP) {
+    		bzero(error_msg, 0);
+			sprintf(error_msg+strlen(error_msg), "!%lue34\n%s", action[0], ranng_msg);
+			send(connection, error_msg, 40, 0);
+			memset(error_msg, 0, 1024);
     		return (void *) 0;
 
     	}
@@ -163,6 +197,7 @@ void * process_task (void * socket, char * prompt) {
     	if (strlen(query)== 0) {
     		//store the new entry immediatly and keep track of the type[index]
     		memset(entry[index], 0, sizeof(char)*50);
+    		memset(error_msg, 0, 1024);
     		memcpy((void *)entry[index], (const void *)handle[1], sizeof(char)*action[1]);
     		//entry[index] = task;
     		printf(" Index %d Entry %d is: %s\n", index, index, entry[index]);
@@ -170,24 +205,25 @@ void * process_task (void * socket, char * prompt) {
     		sprintf(error_msg+strlen(error_msg), "%s%lue0", suc_msg, (action[0]+1));
     		send(connection, error_msg, 100, 0);
     		bzero(error_msg, 0);
+    		memset(error_msg, 0, 1024);
     	}
     	else {
     		memset(entry[index], 0, sizeof(char)*50);
+    		memset(error_msg, 0, 1024);
     		memcpy((void *)entry[index], (const void *)handle[1], sizeof(char)*action[1]);
     		printf(" Index %d Entry %d is: %s\n", index, index, entry[index]);
     		printf("success\n");
     		memset(error_msg, 0, sizeof(error_msg));
-
     		sprintf(error_msg+strlen(error_msg), "%s%lue0", suc_msg, (action[0]+1));
     		send(connection, error_msg, 100, 0);
+    		memset(error_msg, 0, 1024);
     	}
     }
-    	//if not we need to clean the entry
-    	//store new entry
   	else {
     	//return an error to the client here
     	printf("A syntactical error occured\n");
     }
+    	printf("End reacched\n");
     	return (void *) 0;
 }
 
@@ -225,7 +261,8 @@ void * handle_client (void * snew) {
 
 int main(int argc, char* argv[]){
 
-	int socky, snew, fromlength, open_e, settings_flag;							//129.128.41.20
+	int socky, snew, fromlength, open_e, settings_flag;
+	int portnumber;							//129.128.41.20
 
 	char * options[1];
 
@@ -247,37 +284,34 @@ int main(int argc, char* argv[]){
 			settings_flag = 1;
 		}
 		else if (argc == 2) {
-			printf("Default with specified portnumber\n");
+			portnumber = atoi(argv[1]);
+			printf("port number is %d\n", portnumber);
 			settings_flag = 1;
 		}
 		else if (argc == 3) {
-			printf("This is argv[2]: %s. And this is argv[3] %s\n", argv[2], argv[3] );
+			//printf("This is argv[2]: %s. And this is argv[3] %s\n", argv[2], argv[3] );
 
 			if (strcmp(argv[2], options[0]) == 0) {
 				//enter file name for preloaded wb
-				printf("Error need to specify a file to be loaded.\n");
-				settings_flag = 1;
+				printf("Error need to specify the statefile to load \n");
 			}
 			else if (strcmp(argv[2], options[1]) == 0) {
 				//enter entry size of wb
 				entryCAP = ENTRY_SIZE;
-				printf("Wb entry max size.%d\n", entryCAP);
-				settings_flag = 1;
+				printf("Error need to specify number of entries \n");
 			}
-			else if (argv[3] == NULL){
-				printf("Default with specified portnumber\n");
-				settings_flag = 1;
-				}
-			}
+			exit(1);
+		}
 		else if (argc == 4) {
-
-			if (strcmp(argv[2], options[0]) == 0) {
+			portnumber = atoi(argv[1]);
+			printf("port number is %f\n", portnumber);
+			if (strcmp(argv[1], options[0]) == 0) {
 				printf("Pre-loaded statefile %s\n", argv[3]);
 				statefile = fopen(argv[3], "w+");
 				settings_flag = 1;
 			}
 			else if (strcmp(argv[2], options[1]) == 0) {
-				entryCAP = atof(argv[3]);
+				entryCAP = atoi(argv[3]);
 				if (entryCAP > 500) {
 					entryCAP = ENTRY_SIZE;
 				}

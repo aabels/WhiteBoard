@@ -20,10 +20,12 @@
 
 static int getLine (char *prmpt, char *buff, size_t sz);
 
-int main()
+FILE *fp_keyfile = NULL;
+
+int main(int argc, char* argv[])
 {
 	
-	int	rc, s, big_flag = 1, upon_entry = 1;
+	int	rc, s, big_flag = 1, upon_entry = 1, setup_flag = 0;
 	char msg[1024], buff[102], tooServer[1024], type[2];
 	//char * Fupdate = "?12p\n";
 	char c_char[1] = "c", p_char[1] = "p";
@@ -31,12 +33,48 @@ int main()
 	long int action[2];
 	char command[1024];
 	char *p;
+	char ip[1024];
+	int port;
 	//update:"@12p4\ncool\n";
 
 	struct	sockaddr_in	server;
 	struct	hostent		*host;
 
-	host = gethostbyname ("localhost");
+	while (!setup_flag) {
+		if (argc == 1) {
+			printf("Default settings with default port and keyfile\n");
+			host = gethostbyname ("localhost");
+			setup_flag = 1;
+		}
+		else if (argc == 2) {
+			host = gethostbyname (argv[1]);
+			printf("Host is %s", host);
+			exit(1);
+		}
+		else if (argc == 3) {
+			port = atoi(argv[2]);
+			printf("port is %d \n", port);
+			exit(1);
+		}
+		else if (argc == 4) {
+			port = atoi(argv[2]);
+			host = gethostbyname (argv[1]);
+			printf("port number is %d\n", port);
+			printf("Key file %s\n", argv[3]);
+			fp_keyfile = fopen(argv[3], "r");
+			//keyfile = fopen(argv[3], "w+");
+			setup_flag = 1;		
+			}
+
+		else {
+			printf("Something went wrong please re-type specifications.\n");
+			exit(1);
+		}
+	}
+
+
+
+	//host = gethostbyname ("localhost");
 
 	if (host == NULL) {
 		perror ("Client: cannot get host description");
@@ -89,41 +127,86 @@ int main()
 			send(s,tooServer, 100, 0);
 			sleep(2);
 			//Recieving the completed task
+			memset(msg, 0, sizeof(char)*1024);
+			memset(buff, 0, sizeof(char)*1024);
+			// memset(type, 0, sizeof(char)*1024);
+
 			bzero(buff, 100);
 			bzero(msg, 1024);
-			// recv(s, msg, 1024, 0);
-			// printf("received: %s\n", msg);
+
+			recv(s, msg, 1024, 0);
+			printf("received: %s END\n", msg);
+
+			//NEED TO CHECK THE TYPE OF MSG HERE
+			char uncrypted_msg[1024];
+			char *temp_msg = (char *) msg;
+			char * dec_input[1];
+			dec_input[0] = strtok (temp_msg, "\n");
+			dec_input[1] = strtok (NULL, "\n");
+			char command_1[1024];
+			memset(command_1, 0, sizeof(char)*1024);
+			char p_entry[1024];
+			strcpy(command_1, dec_input[0]);
+			char * p_1;
+			p_1 = command_1;
+			
+			while (*p_1) {
+				if (isalpha(*p_1)) {
+					strncpy(type, &(*p_1), 1);
+				}
+				p_1++;
+			}
 
 			
 			if (strncmp(type, c_char, 1)==0) {
-				char * dec_input[1];
-				char * p_1;
-				char command_1[1024];
-				char *temp_msg = (char *) msg;
-			    dec_input[0] = strtok (temp_msg, "\n");
-			    dec_input[1] = strtok (NULL, "\n");
-			    strcpy(command_1, dec_input[0]);
-			    strcpy(buff, dec_input[1]);
-			    p_1 = command_1;
-			    while (*p_1) {
-					if (isalpha(*p_1)) {
-						strncpy(type, &(*p_1), 1);
-					}
-					p_1++;
-				}
-			       	do_func(buff, 2);
-			        char *str1 = get_output();
-			        printf("%s\n", str1);
+				strcpy(buff, dec_input[1]);
+			    do_func(buff, 2, fp_keyfile);
+			    char *str1 = get_output();
+
+			    char* str_to_cmp = malloc(34);
+		        strcpy(str_to_cmp, "CMPUT379 Whiteboard Encrypted v0\n");
+
+		        if (strncmp(type, c_char, 34)!=0){
+		        	printf("Client was unable to find correct key.\n");
+		        }
+
+			    bzero(p_entry, 0);
+				bzero(buff, 0);
+				bzero(msg, 0);
+				// memset(buff, 0, sizeof(char)*1024);
+				// memset(type, 0, sizeof(char)*1024);
+				// memset(command_1, 0, sizeof(char)*1024);
 			}
 			else {
-				bzero(buff, 0);
-				bzero(msg, 0);
-				memset(msg, 0, sizeof(char)*1024);
-				recv(s, msg, 1024, 0);
-				printf("%s\n", msg);
-				bzero(buff, 0);
-				bzero(msg, 0);
+				// bzero(buff, 0);
+				// bzero(msg, 0);
+				// recv(s, msg, 1024, 0);
+				if (dec_input[1] == NULL) {
+					printf("here\n");
+					printf("%s\n", msg);
+					// bzero(buff, 0);
+					// bzero(msg, 0);
+					// memset(buff, 0, sizeof(char)*1024);
+					// memset(type, 0, sizeof(char)*1024);
+					// memset(command, 0, sizeof(char)*1024);;
+					// memset(msg, 0, sizeof(char)*1024);
+
+				}
+				else {
+					strcpy(uncrypted_msg, dec_input[1]);
+					sprintf(p_entry+strlen(p_entry),"%s\n%s",command_1, uncrypted_msg);
+					printf("Is this the problem\n");
+					printf("%s\n", p_entry);
+					bzero(p_entry, 0);
+					bzero(buff, 0);
+					bzero(msg, 0);
+						
+				}
 			}
+			// memset(dec_input[0], 0, sizeof(char*));
+			// memset(dec_input[1], 0, sizeof(char*));
+			// memset(type, 0, sizeof(char)*1024);
+			// memset(command, 0, sizeof(char)*1024);
 	    }
     	else if (strcmp(buff,UPDATE)== 0) {
 	      	memset(buff, 0, sizeof(buff));
@@ -141,7 +224,7 @@ int main()
 		        char* not_s = malloc(34);
 		        strcpy(not_s, "CMPUT379 Whiteboard Encrypted v0\n");
 		        prepend(buff, not_s);
-		        do_func(buff, 1);
+		        do_func(buff, 1, fp_keyfile);
 		        char *str1 = get_output();
 		        printf("Base-64 encoded string is: %s\n", str1);  //Prints base64 encoded string.
 		        sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(str1) + strlen(tooServer), str1);
@@ -213,9 +296,15 @@ int main()
 			memset(buff, 0, sizeof(buff));
 			memset(type, 0, sizeof(type));
 			bzero(tooServer, 0);
+			send(s,tooServer, 100, 0);
 			// memset(tooServer, 0, sizeof(tooServer));
 			//send to server
-			printf("%s\n", tooServer);
+			bzero(buff, 100);
+			bzero(msg, 1024);
+			recv(s, msg, 1024, 0);
+			printf("%s\n", msg);
+		    memset(msg, 0, sizeof(msg));
+			memset(buff, 0, sizeof(buff));
 	    }
 		//Sending Query Here
 		// send(s,Fupdate, 100, 0);

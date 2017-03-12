@@ -14,7 +14,7 @@
 #define MAX_LINES       100
 
 // Bogus key and IV: we'd normally set these from another source
-unsigned char key[] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";//{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+//unsigned char key[] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";//{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 unsigned char iv[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 int encrypted_count, decrypted_count, number_of_keys = 0;
 char *str_to_send = NULL;
@@ -154,9 +154,9 @@ char **arrayLines(FILE *fp1)
 }
 
 // ########################## MAIN FUNCTION #######################################
-int do_func(char*input_text, int switch_int){
+int do_func(char*input_text, int switch_int, FILE *fp1){
 
-    FILE *fp1;
+    //FILE *fp1;
     char *text;
     char *detext;
     char **arrayLine_loc;
@@ -196,20 +196,20 @@ int do_func(char*input_text, int switch_int){
         //printf("Base-64 decoded string is: %s\n", base64_decoded);  //Prints base64 decoded string.
 
 
-        fp1 = fopen("key.txt","r");
+        //p1 = fopen("keys.txt","r");
         if(fp1 == NULL)
         {
-            str_to_send = malloc(54);
-            decrypted_count = 54;
-            char* err_msg_1 = malloc(54);
-            strcpy(err_msg_1, "Content could not be decrypted. Please use valid key\n");
-            strncpy(output_text, err_msg_1, 54);
+            str_to_send = malloc(26);
+            decrypted_count = 26;
+            char* err_msg_1 = malloc(26);
+            strcpy(err_msg_1, "Could not find key file.\n");
+            strncpy(output_text, err_msg_1, 26);
             output_text[decrypted_count] = 0;
-            memcpy(str_to_send, output_text, decrypted_count);
-            bzero(output_text, 54);
+            //printf("str_to_send: %s", str_to_send);
+            bzero(output_text, 26);
             free(err_msg_1);
-            printf("\nError reading file\n");
-            exit(0);
+            //printf("\nError reading file\n");
+            return (void *) 0;
         }
         arrayLine_loc = arrayLines(fp1);
         fclose(fp1);
