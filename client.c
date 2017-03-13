@@ -9,7 +9,7 @@
 #include <string.h>
 #include "encryptdecrypt.c"
 
-#define	 MY_PORT  	2229
+#define	 MY_PORT  	2230
 #define OK       	0
 #define NO_INPUT 	1
 #define TOO_LONG 	2
@@ -20,13 +20,13 @@
 
 static int getLine (char *prmpt, char *buff, size_t sz);
 
-FILE *fp_keyfile = NULL;
+char *fp_keyfile;
 
 int main(int argc, char* argv[])
 {
 	
 	int	rc, s, big_flag = 1, upon_entry = 1, setup_flag = 0;
-	char msg[1024], buff[102], tooServer[1024], type[2];
+	char msg[1024], buff[1024], tooServer[1024], type[2];
 	//char * Fupdate = "?12p\n";
 	char c_char[1] = "c", p_char[1] = "p";
 	char * handle[1];
@@ -44,11 +44,13 @@ int main(int argc, char* argv[])
 		if (argc == 1) {
 			printf("Default settings with default port and keyfile\n");
 			host = gethostbyname ("localhost");
+			port = MY_PORT;
+			//host = gethostbyname ("127.0.0.1");
 			setup_flag = 1;
 		}
 		else if (argc == 2) {
 			host = gethostbyname (argv[1]);
-			printf("Host is %s", host);
+			//printf("Host is %s\n", host);
 			exit(1);
 		}
 		else if (argc == 3) {
@@ -61,7 +63,7 @@ int main(int argc, char* argv[])
 			host = gethostbyname (argv[1]);
 			printf("port number is %d\n", port);
 			printf("Key file %s\n", argv[3]);
-			fp_keyfile = fopen(argv[3], "r");
+			fp_keyfile = argv[3];
 			//keyfile = fopen(argv[3], "w+");
 			setup_flag = 1;		
 			}
@@ -89,7 +91,7 @@ int main(int argc, char* argv[])
 	bzero (&server, sizeof (server));
 	bcopy (host->h_addr, & (server.sin_addr), host->h_length);
 	server.sin_family = host->h_addrtype;
-	server.sin_port = htons (MY_PORT);
+	server.sin_port = htons (port);
 	if (connect (s, (struct sockaddr*) & server, sizeof (server))) {
 		perror ("Client: cannot connect to server");
 		exit (1);
@@ -123,7 +125,7 @@ int main(int argc, char* argv[])
 			rc = getLine ("Enter specified entry number: ", buff, sizeof(buff));
 			//printf ("Entry number:  [%s]\n", buff);
 			sprintf(tooServer, "?%s\n", buff);
-			//printf("tooServer2:%s\n", tooServer);
+			printf("tooServer: %s\n", tooServer);
 			send(s,tooServer, 100, 0);
 			sleep(2);
 			//Recieving the completed task
@@ -131,11 +133,11 @@ int main(int argc, char* argv[])
 			memset(buff, 0, sizeof(char)*1024);
 			// memset(type, 0, sizeof(char)*1024);
 
-			bzero(buff, 100);
+			bzero(buff, 1024);
 			bzero(msg, 1024);
 
 			recv(s, msg, 1024, 0);
-			printf("received: %s END\n", msg);
+			//printf("received: %s\n", msg);
 
 			//NEED TO CHECK THE TYPE OF MSG HERE
 			char uncrypted_msg[1024];
@@ -160,13 +162,17 @@ int main(int argc, char* argv[])
 			
 			if (strncmp(type, c_char, 1)==0) {
 				strcpy(buff, dec_input[1]);
+				//printf("check 1 buff %s\n", buff);
 			    do_func(buff, 2, fp_keyfile);
+			    //printf("check 2\n");
 			    char *str1 = get_output();
+			   // printf("check 3\n");
+			    printf("%s\n", str1);
 
-			    char* str_to_cmp = malloc(34);
+			    char* str_to_cmp = malloc(33);
 		        strcpy(str_to_cmp, "CMPUT379 Whiteboard Encrypted v0\n");
 
-		        if (strncmp(type, c_char, 34)!=0){
+		        if (strncmp(str1, str_to_cmp, 33)!=0){
 		        	printf("Client was unable to find correct key.\n");
 		        }
 
@@ -182,7 +188,7 @@ int main(int argc, char* argv[])
 				// bzero(msg, 0);
 				// recv(s, msg, 1024, 0);
 				if (dec_input[1] == NULL) {
-					printf("here\n");
+					//printf("here\n");
 					printf("%s\n", msg);
 					// bzero(buff, 0);
 					// bzero(msg, 0);
@@ -195,7 +201,7 @@ int main(int argc, char* argv[])
 				else {
 					strcpy(uncrypted_msg, dec_input[1]);
 					sprintf(p_entry+strlen(p_entry),"%s\n%s",command_1, uncrypted_msg);
-					printf("Is this the problem\n");
+					//printf("Is this the problem\n");
 					printf("%s\n", p_entry);
 					bzero(p_entry, 0);
 					bzero(buff, 0);
@@ -221,18 +227,29 @@ int main(int argc, char* argv[])
 			rc = getLine ("Enter your message: ", buff, sizeof(buff));
 
 			if (strncmp(type, c_char, 1)==0){
+				//printf("checkpoint 1\n");
 		        char* not_s = malloc(34);
+		       // printf("checkpoint 1a\n");
 		        strcpy(not_s, "CMPUT379 Whiteboard Encrypted v0\n");
+		        //printf("checkpoint 1b\n");
 		        prepend(buff, not_s);
+		        //printf("checkpoint 1c\n");
 		        do_func(buff, 1, fp_keyfile);
+		        //printf("checkpoint 1d\n");
 		        char *str1 = get_output();
-		        printf("Base-64 encoded string is: %s\n", str1);  //Prints base64 encoded string.
-		        sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(str1) + strlen(tooServer), str1);
-		        printf("tooServer: %s", tooServer);
+		        //printf("checkpoint 1e\n");
+		       // printf("Base-64 encoded string is: %s\n", str1);  //Prints base64 encoded string.
+		       // printf("checkpoint 1f\n");
+		        sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(str1), str1);
+		       // printf("checkpoint 1g\n");
+		       // printf("tooServer: %s, %d\n", tooServer, strlen(tooServer));
+		       // printf("checkpoint 2\n");
 		        send(s,tooServer, 1024, 0);
-				bzero(buff, 100);
+		       // printf("checkpoint 3\n");
+				bzero(buff, 1024);
 				bzero(msg, 1024);
 				recv(s, msg, 1024, 0);
+				//printf("checkpoint 4\n");
 				printf("%s\n", msg);
 		    	memset(msg, 0, sizeof(msg));
 				memset(buff, 0, sizeof(buff));
@@ -242,7 +259,7 @@ int main(int argc, char* argv[])
 	        	sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(buff), buff);
 	        	send(s,tooServer, 100, 0);
 
-	        	bzero(buff, 100);
+	        	bzero(buff, 1024);
 				bzero(msg, 1024);
 				recv(s, msg, 1024, 0);
 				printf("%s\n", msg);
@@ -299,7 +316,7 @@ int main(int argc, char* argv[])
 			send(s,tooServer, 100, 0);
 			// memset(tooServer, 0, sizeof(tooServer));
 			//send to server
-			bzero(buff, 100);
+			bzero(buff, 1024);
 			bzero(msg, 1024);
 			recv(s, msg, 1024, 0);
 			printf("%s\n", msg);
@@ -321,8 +338,8 @@ int main(int argc, char* argv[])
 		memset(command, 0, sizeof(command));	
 		//fprintf (stderr, "Process %d gets number %d\n", getpid (), ntohl (number));
 	}
-		close (s);
-		exit(1);
+	close (s);
+	exit(1);
 }
 
 //http://stackoverflow.com/questions/4815672/handling-string-input-in-c
