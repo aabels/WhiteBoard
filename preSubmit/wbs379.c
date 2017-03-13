@@ -98,7 +98,7 @@ int main(int argc, char* argv[]){
 	}
 
 	init_board(statefile);
-    //deamonize(deamonfile);
+    	deamonize(deamonfile);
 
 	//marks socky as a passive socket ready to accept incoming connection requests
 	listen (socky, 7); //7 is the backlog number to limit the number of outstanding connection in the listen queue
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]){
 		pthread_create(&thread[open_e], NULL, handle_client, (void *) &snew);
 		open_e++;
 	}
-	//fclose(deamonfile);
+	fclose(deamonfile);
 }
 
 /*websites for notes:
