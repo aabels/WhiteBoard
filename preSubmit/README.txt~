@@ -1,0 +1,41 @@
+Group Members:
+	Angus Aabels
+	aabels 1408466
+
+	Toluwanimi Akindele
+		1440804
+
+Files:
+	1. wb.c .	.	.	.	.	server program
+	2. client.c .	.	.	.	client program
+	3. encryptdecrypt.c .	.	encryption and decryption program
+	4. key.txt .	.	.	.	document of client's keys
+	* any more I'm missing?
+
+wb.c
+	- FIND prompts user to search for a specified entry in the WB
+	- UPDATE pompts user to pick a WB entry to update
+	- CLEAR cleans the entry specified 
+
+client.c
+	- includes: 
+		- encryptdecrypt.c file .	.	explained below
+		- getLine function 	.	.	.	
+	- 
+
+encryptdecrypt.c
+	- encode, encrypt, decrypt and decode are split into their individual functions
+	- these functions return (char *)s, making it easy to send the results around the program
+	- the "main funtion" for this file is the do_func function
+		- this is where all the sending and receiving of strings is done
+	- in the main function, a string value is assigned to "str_to_send" (a global variable)
+	- str_to_send is accessed through the client by calling the get_output() function
+	- this is how client.c gets results from encryptdecrypt.c
+	- additional functions:
+		- prepend 	.	.	.	.	puts s in front of t and saves to s
+		- arrayLines 	.	.	.	reads file, puts the lines into an array
+
+key.txt
+	- contains the base64 value of our key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+		- base64 value of our key: YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
+	- other keys are included for testing purposes
