@@ -51,6 +51,7 @@ int main(int argc, char* argv[]){
 			printf("port number is %d\n", portnumber);
 			if (strcmp(argv[2], options[0]) == 0) {
 				printf("Pre-loaded statefile %s\n", argv[3]);
+				state_flag = 1;
 				statefile = argv[3];
 				read_statefile(statefile);
 				settings_flag = 1;
@@ -97,7 +98,7 @@ int main(int argc, char* argv[]){
 	}
 
 	init_board(statefile);
-    deamonize(deamonfile);
+    //deamonize(deamonfile);
 
 	//marks socky as a passive socket ready to accept incoming connection requests
 	listen (socky, 7); //7 is the backlog number to limit the number of outstanding connection in the listen queue
@@ -114,16 +115,8 @@ int main(int argc, char* argv[]){
 		pthread_create(&thread[open_e], NULL, handle_client, (void *) &snew);
 		open_e++;
 	}
-	fclose(deamonfile);
+	//fclose(deamonfile);
 }
-
-
-
-
-
-
-
-
 
 /*websites for notes:
 https://linux.die.net/man/2/socket

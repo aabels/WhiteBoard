@@ -5,7 +5,6 @@ int main(int argc, char* argv[])
 	
 	int	rc, s, big_flag = 1, upon_entry = 1, setup_flag = 0;
 	char msg[1024], buff[1024], tooServer[1024], type[2];
-	//char * Fupdate = "?12p\n";
 	char c_char[1] = "c", p_char[1] = "p";
 	char * handle[1];
 	long int action[2];
@@ -13,7 +12,6 @@ int main(int argc, char* argv[])
 	char *p;
 	char ip[1024];
 	int port;
-	//update:"@12p4\ncool\n";
 
 	struct	sockaddr_in	server;
 	struct	hostent		*host;
@@ -23,29 +21,37 @@ int main(int argc, char* argv[])
 			printf("Default settings with default port and keyfile\n");
 			host = gethostbyname ("localhost");
 			port = MY_PORT;
-			//host = gethostbyname ("127.0.0.1");
 			setup_flag = 1;
 		}
 		else if (argc == 2) {
 			host = gethostbyname (argv[1]);
-			//printf("Host is %s\n", host);
 			exit(1);
 		}
 		else if (argc == 3) {
+			host = gethostbyname (argv[1]);
 			port = atoi(argv[2]);
-			printf("port is %d \n", port);
-			exit(1);
+			fp_keyfile = NULL;
+			printf("Port is %d \n", port);
+			printf("No keyfile! Encrypt and decrypt features will be unavailable\n");
+			setup_flag = 1;
 		}
 		else if (argc == 4) {
 			port = atoi(argv[2]);
 			host = gethostbyname (argv[1]);
-			printf("port number is %d\n", port);
-			printf("Key file %s\n", argv[3]);
-			fp_keyfile = argv[3];
-			//keyfile = fopen(argv[3], "w+");
-			setup_flag = 1;		
-			}
+			printf("Port number is %d\n", port);
 
+			FILE *fp_tester;
+			fp_tester = fopen(argv[3], "r");
+			if (fp_tester == NULL) {
+				fp_keyfile = NULL;
+				printf("Invalid keyfile! Encrypt and decrypt features will be unavailable\n");
+			}
+			else {
+				printf("Key file %s\n", argv[3]);
+				fp_keyfile = argv[3];
+			}
+			setup_flag = 1;		
+		}
 		else {
 			printf("Something went wrong please re-type specifications.\n");
 			exit(1);
@@ -53,8 +59,6 @@ int main(int argc, char* argv[])
 	}
 
 
-
-	//host = gethostbyname ("localhost");
 
 	if (host == NULL) {
 		perror ("Client: cannot get host description");
@@ -98,24 +102,17 @@ int main(int argc, char* argv[])
 			big_flag = 0;
 			break;
 	    }		
-		//printf("sending: %s \n", Fupdate);
 	    if (strcmp(buff,QUERY)== 0) {
 			rc = getLine ("Enter specified entry number: ", buff, sizeof(buff));
-			//printf ("Entry number:  [%s]\n", buff);
 			sprintf(tooServer, "?%s\n", buff);
-			printf("tooServer: %s\n", tooServer);
 			send(s,tooServer, 100, 0);
 			sleep(2);
 			//Recieving the completed task
 			memset(msg, 0, sizeof(char)*1024);
 			memset(buff, 0, sizeof(char)*1024);
-			// memset(type, 0, sizeof(char)*1024);
-
 			bzero(buff, 1024);
 			bzero(msg, 1024);
-
 			recv(s, msg, 1024, 0);
-			//printf("received: %s\n", msg);
 
 			//NEED TO CHECK THE TYPE OF MSG HERE
 			char uncrypted_msg[1024];
@@ -136,15 +133,11 @@ int main(int argc, char* argv[])
 				}
 				p_1++;
 			}
-
-			
+			//If the Query is Encrpted
 			if (strncmp(type, c_char, 1)==0) {
 				strcpy(buff, dec_input[1]);
-				//printf("check 1 buff %s\n", buff);
 			    do_func(buff, 2, fp_keyfile);
-			    //printf("check 2\n");
 			    char *str1 = get_output();
-			   // printf("check 3\n");
 			    printf("%s\n", str1);
 
 			    char* str_to_cmp = malloc(33);
@@ -157,29 +150,14 @@ int main(int argc, char* argv[])
 			    bzero(p_entry, 0);
 				bzero(buff, 0);
 				bzero(msg, 0);
-				// memset(buff, 0, sizeof(char)*1024);
-				// memset(type, 0, sizeof(char)*1024);
-				// memset(command_1, 0, sizeof(char)*1024);
 			}
 			else {
-				// bzero(buff, 0);
-				// bzero(msg, 0);
-				// recv(s, msg, 1024, 0);
 				if (dec_input[1] == NULL) {
-					//printf("here\n");
 					printf("%s\n", msg);
-					// bzero(buff, 0);
-					// bzero(msg, 0);
-					// memset(buff, 0, sizeof(char)*1024);
-					// memset(type, 0, sizeof(char)*1024);
-					// memset(command, 0, sizeof(char)*1024);;
-					// memset(msg, 0, sizeof(char)*1024);
-
 				}
 				else {
 					strcpy(uncrypted_msg, dec_input[1]);
 					sprintf(p_entry+strlen(p_entry),"%s\n%s",command_1, uncrypted_msg);
-					//printf("Is this the problem\n");
 					printf("%s\n", p_entry);
 					bzero(p_entry, 0);
 					bzero(buff, 0);
@@ -187,10 +165,6 @@ int main(int argc, char* argv[])
 						
 				}
 			}
-			// memset(dec_input[0], 0, sizeof(char*));
-			// memset(dec_input[1], 0, sizeof(char*));
-			// memset(type, 0, sizeof(char)*1024);
-			// memset(command, 0, sizeof(char)*1024);
 	    }
     	else if (strcmp(buff,UPDATE)== 0) {
 	      	memset(buff, 0, sizeof(buff));
@@ -204,34 +178,27 @@ int main(int argc, char* argv[])
 			memset(buff, 0, sizeof(buff));
 			rc = getLine ("Enter your message: ", buff, sizeof(buff));
 
-			if (strncmp(type, c_char, 1)==0){
-				//printf("checkpoint 1\n");
-		        char* not_s = malloc(34);
-		       // printf("checkpoint 1a\n");
-		        strcpy(not_s, "CMPUT379 Whiteboard Encrypted v0\n");
-		        //printf("checkpoint 1b\n");
-		        prepend(buff, not_s);
-		        //printf("checkpoint 1c\n");
-		        do_func(buff, 1, fp_keyfile);
-		        //printf("checkpoint 1d\n");
-		        char *str1 = get_output();
-		        //printf("checkpoint 1e\n");
-		       // printf("Base-64 encoded string is: %s\n", str1);  //Prints base64 encoded string.
-		       // printf("checkpoint 1f\n");
-		        sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(str1), str1);
-		       // printf("checkpoint 1g\n");
-		       // printf("tooServer: %s, %d\n", tooServer, strlen(tooServer));
-		       // printf("checkpoint 2\n");
-		        send(s,tooServer, 1024, 0);
-		       // printf("checkpoint 3\n");
-				bzero(buff, 1024);
-				bzero(msg, 1024);
-				recv(s, msg, 1024, 0);
-				//printf("checkpoint 4\n");
-				printf("%s\n", msg);
-		    	memset(msg, 0, sizeof(msg));
-				memset(buff, 0, sizeof(buff));
-		        free(not_s);
+			if (strncmp(type, c_char, 1)==0) {
+
+				if (fp_keyfile == NULL) {
+					printf("Unable to encrypt! Features are unavailable.\n");
+				}
+				else {
+			        char* not_s = malloc(34);
+			        strcpy(not_s, "CMPUT379 Whiteboard Encrypted v0\n");
+			        prepend(buff, not_s);
+			        do_func(buff, 1, fp_keyfile);
+			        char *str1 = get_output();
+			        sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(str1), str1);
+			        send(s,tooServer, 1024, 0);
+					bzero(buff, 1024);
+					bzero(msg, 1024);
+					recv(s, msg, 1024, 0);
+					printf("%s\n", msg);
+			    	memset(msg, 0, sizeof(msg));
+					memset(buff, 0, sizeof(buff));
+			        free(not_s);
+				}
 	      	}
 	      	else if (strncmp(type, p_char, 1)==0){
 	        	sprintf(tooServer+ strlen(tooServer),"%lu\n%s\n", strlen(buff), buff);
@@ -244,11 +211,8 @@ int main(int argc, char* argv[])
 		    	memset(msg, 0, sizeof(msg));
 				memset(buff, 0, sizeof(buff));
 				
-				//break
 	      	}
 	      	memset(type, 0, sizeof(type));
-	      	//send to server
-	      	//printf("%s", tooServer)
 			//command segment here
 			handle[0] = strtok (tooServer, "\n");
 			if (handle[0] == NULL) {
@@ -257,24 +221,20 @@ int main(int argc, char* argv[])
 			else {
 				//message segment here
 				handle[1] = strtok (NULL, "\n");
-				//printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
 		      	//used to get the msg length and entry number as integers
 		      	strcpy(command, handle[0]);
-		      	//printf("%s\n",command);
 		      	p = command;
 		      	int count = 0;
 		      	while (*p) {
 		        	if (isdigit(*p)) {
 		          		long val = strtol(p, &p, 10);
 		          		action[count] = val;
-		          		//printf("TEST\n");
 		          		count++;
 		        	}
 		        	else {
 		          		p++;
 		        	}
 		      	}
-		      	//printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
 			}
 			memset(tooServer, 0, sizeof(tooServer));
       	}
@@ -283,39 +243,26 @@ int main(int argc, char* argv[])
 			memset(type, 0, sizeof(type));
 			rc = getLine ("Enter entry number to clean: ", buff, sizeof(buff));
 			sprintf(tooServer, "@%s", buff);
-			//Does it matter if the entry was p or e to clean?
-			//rc = getLine ("(c or p): ", type, sizeof(type));
 			char p_char[1] = "p";
 			strncpy(type, p_char, 1);
 			sprintf(tooServer+strlen(tooServer),"%s0\n",type);
 			memset(buff, 0, sizeof(buff));
 			memset(type, 0, sizeof(type));
-			bzero(tooServer, 0);
-			send(s,tooServer, 100, 0);
-			// memset(tooServer, 0, sizeof(tooServer));
 			//send to server
+			send(s,tooServer, 100, 0);
 			bzero(buff, 1024);
 			bzero(msg, 1024);
+			//recieve back
 			recv(s, msg, 1024, 0);
 			printf("%s\n", msg);
 		    memset(msg, 0, sizeof(msg));
 			memset(buff, 0, sizeof(buff));
-	    }
-		//Sending Query Here
-		// send(s,Fupdate, 100, 0);
-		// sleep(2);
-
-		// //Recieving the completed task
-		// bzero(msg, 1024);
-		// send(s,Fupdate, 100, 0);
-		// recv(s, msg, 1024, 0);
-		// printf("%s\n", msg);
-		// sleep (2);
+			bzero(tooServer, 0);
+	    }	
 		memset(buff, 0, sizeof(buff));
 		memset(type, 0, sizeof(type));
 		memset(command, 0, sizeof(command));	
-		//fprintf (stderr, "Process %d gets number %d\n", getpid (), ntohl (number));
 	}
-	close (s);
+	close(s);
 	exit(1);
 }

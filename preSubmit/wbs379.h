@@ -22,7 +22,7 @@
 
 pthread_t thread[NUM_THREADS];
 pthread_mutex_t mutex;
-int entryCAP = 0;
+int entryCAP = 0, state_flag = 0;
 unsigned int snew;
 char ** entry;
 char ** det;
@@ -49,7 +49,6 @@ void * process_task (void * socket, char * prompt) {
 	char const ranng_msg[] = "That entry number does not exist\n";
 	char const suc_msg[] = "!";
 	char * handle[1];
-	//char * sendback[1];
     long int action[2];
     char command[1024], query[1024], result[1024], error_msg[1024];
     char *p;
@@ -63,11 +62,10 @@ void * process_task (void * socket, char * prompt) {
     handle[1] = strtok (NULL, "\n");
     //meaning if its not a query grab the type, len, and entry #
     strcpy(command, handle[0]);
-	//printf("Do I go in\n");
 	p = command;
 	action[0] = 0;
 	action[1] = 0;
-    //printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
+    printf("Handle[0]: %s Handle[1] %s\n", handle[0], handle[1]);
     
     while (*p) {
 		if (isdigit(*p)) {
@@ -85,8 +83,6 @@ void * process_task (void * socket, char * prompt) {
 		}
 		p++;
 	}
-	//printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
-
     //used to get the msg length and entry number as integers
 	//check if its a query '?' or '@'
 	if (strncmp(command, "?", 1)==0) {
@@ -94,20 +90,18 @@ void * process_task (void * socket, char * prompt) {
 			if (isdigit(*p)) {
 				long val = strtol(p, &p, 10);
 				action[count] = val;
-				//printf("ACtion count %d \n", action[count]);
 				count++;
 			}
 			if (isalpha(*p)) {
 				flag = 1;
 				if (flag){
-					//printf("test\n");
 					strncpy(type, &(*p), 1);
 					flag = 0;
 				}
 			}
 			p++;
 		}
-		//printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
+
 		//Error handling for asking for entry zero
 		if (action[0]==0){
 			bzero(error_msg, 0);
@@ -126,85 +120,38 @@ void * process_task (void * socket, char * prompt) {
 			memset(error_msg, 0, 1024);
     		return (void *) 0;
     	}
-		//printf("Do we go here\n");
-		//printf("Entry %d Query is: %s\n", entry[index], query);
-		//printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[action[0]]);
+
     	memcpy((void *)query, (const void *)entry[index], sizeof(char)*1024);
 
     	//Error handling for when the entry is empty
     	if (strlen(entry[index]) == 0) {
-    		//printf("test\n");
-    		bzero(error_msg, 0);
+    		bzero(error_msg, 1024);
     		sprintf(error_msg+strlen(error_msg), "!%lup0\n",(action[0]+1));
-    		//printf("too server %s\n", error_msg);
     		send(connection, error_msg, 40, 0);
     		memset(error_msg, 0, 1024);
     		return (void *) 0;
     	}
-
-    	if (strcmp(query, entry[index])==0) {
-    		printf("Do i go here\n");
-    		//NEEEED TO PARSE THE PRELOADED STATE FILE TO SEND RIGHT INDEX BACK
-	  //   	handle[0] = strtok (query, "\n");
-		 //    //message segment here
-		 //    handle[1] = strtok (NULL, "\n");
-		 //    //meaning if its not a query grab the type, len, and entry #
-		 //    strcpy(command, handle[0]);
-		 //    strcpy(query, handle[1]);
-			// //printf("Do I go in\n");
-			// p = command;
-
-   //  		while (*p) {
-			// if (isdigit(*p)) {
-			// 	long val = strtol(p, &p, 10);
-			// 	action[count] = val;
-			// 	printf("ACtion count %d \n", action[count]);
-			// 	count++;
-			// }
-			// if (isalpha(*p)) {
-			// 	flag = 1;
-			// 	if (flag){
-			// 		printf("test\n");
-			// 		strncpy(type, &(*p), 1);
-			// 		flag = 0;
-			// 	}
-			// }
-			// p++;
-			// }
-
-   //  		memset(result, 0, sizeof(result));
-			// sprintf(result+strlen(result), "!%ld%s%ld\n", (action[0]+1), type, action[1]);
-	  //   	sprintf(result+strlen(result), "%s", query);
-    		memcpy(result, query, sizeof(char)*1024);
-    		send(connection, result, 1024, 0);
-    		memset(query, 0, sizeof(query));
-    		memset(result, 0, sizeof(result));
+		
+    	//to accomodate the entry numbers starting at 1
+    	//locate query here with wb[index] and send results to client
+    	//using the size of result bc no extra allocation implimented yet
+    	if (state_flag == 0) {
+    		sprintf(result+strlen(result), "!%ld%s%ld\n", (action[0]+1), type, action[1]);
+    		sprintf(result+strlen(result), "%s", query);
     	}
-    	else{
-
-	    	//tolucheckpoint
-	    	//strcpy(sendback[0], entry[11]);
-	    	printf("Query is: %s\n", query);
-	    	//printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[action[0]]);
-	    	// printf("This is a query of type %s \n", newtype);
-	    	//to accomodate the entry numbers starting at 1
-	    	//locate query here with wb[index] and send results to client
-	    	//using the size of result bc no extra allocation implimented yet
-	    	sprintf(result+strlen(result), "!%ld%s%ld\n", (action[0]+1), type, action[1]);
-	    	sprintf(result+strlen(result), "%s", query);
-	    	// printf("this is the query %s\n", sendback[1]);
-	    	printf("query is: %s and result is: %s\n", query, result);
-	    	send(connection, result, 1024, 0);
-	    	memset(result, 0, sizeof(result));
-	    	memset(query, 0, sizeof(query));
+    	else {
+    		sprintf(result+strlen(result), "%s", query);
     	}
+    	send(connection, result, 1024, 0);
+    	memset(result, 0, sizeof(result));
+    	memset(query, 0, sizeof(query));
     }
     else if (strncmp(command, "@", 1)==0) {
-  //   	printf("DO I GO HERE\n");
-		// printf("action[0]: %ld action[1]: %ld", action[0], action[1]);
+  		printf("DO I GO HERE\n");
+		printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
 
-		//HANDELS CLEARING HERE
-    	if ((action[0]==0  && action[1]==0)) {
+		//HANDLES CLEARING HERE
+    	if ((action[1]==0)) {
     		action[0] = action[0] - 1;
     		index = (int) action[0];
     		if (index >= entryCAP || index == -1) {
@@ -214,17 +161,18 @@ void * process_task (void * socket, char * prompt) {
 				memset(error_msg, 0, 1024);
 	    		return (void *) 0;
     		}
-    		else {
-    			det[index] = "p";
-    			memset(entry[index], '\0', sizeof(char)* 1024);
-    			//printf("entry is %s and det[%d] %s\n", entry[index], index, det[index]);
-    			memset(error_msg, 0, 1024);
-    			return (void *) 0;
-    		}
+			else {
+				bzero(error_msg, 1024);
+				det[index] = "p";
+				memset(entry[index], '\0', sizeof(char));
+				printf("entry is %s and det[%d] %s\n", entry[index], index, det[index]);
+				sprintf(error_msg+strlen(error_msg), "%s%lue0", suc_msg, (action[0]+1));
+				send(connection, error_msg, 40, 0);
+				return (void *) 0;
+				}
 
     	}
     	if (action[0]==0){
-			//printf("action[0]: %ld action[1]: %ld\n", action[0], action[1]);
 			bzero(error_msg, 0);
 			memset(error_msg, 0, 1024);
 			sprintf(error_msg+strlen(error_msg), "!%lue34\n%s", action[0], ranng_msg);
@@ -232,11 +180,9 @@ void * process_task (void * socket, char * prompt) {
 			memset(error_msg, 0, 1024);
 	    	return (void *) 0;
 		}
-    	//strcpy(command, handle[1]);
     	//need to check if its empty
     	action[0] = action[0] - 1;
     	
-		//"11p14thisIsASercret\n\n
 		//check if the entry exists (is valid) if not return error to client
 		index = (int) action[0];
     	if (index >= entryCAP) {
@@ -248,16 +194,12 @@ void * process_task (void * socket, char * prompt) {
 
     	}
     	det[index] = type;
-		//printf("action[0]: %ld action[1]: %ld, type %s\n", action[0], action[1], det[index]);
     	memcpy((void *)query, (const void *)entry[index], sizeof(char)*action[1]);
     	if (strlen(query)== 0) {
     		//store the new entry immediatly and keep track of the type[index]
     		memset(entry[index], 0, sizeof(char)*action[1]);
     		memset(error_msg, 0, 1024);
     		memcpy((void *)entry[index], (const void *)handle[1], sizeof(char)*action[1]);
-    		//entry[index] = task;
-    		//printf(" Index %d Entry %d is: %s\n", index, index, entry[index]);
-    		//printf("success\n");
     		sprintf(error_msg+strlen(error_msg), "%s%lue0", suc_msg, (action[0]+1));
     		send(connection, error_msg, 100, 0);
     		bzero(error_msg, 0);
@@ -267,8 +209,7 @@ void * process_task (void * socket, char * prompt) {
     		memset(entry[index], 0, sizeof(char)*action[1]);
     		memset(error_msg, 0, 1024);
     		memcpy((void *)entry[index], (const void *)handle[1], sizeof(char)*action[1]);
-    		//printf(" Index %d Entry %d is: %s\n", index, index, entry[index]);
-    		//printf("success\n");
+    		printf(" Index %d Entry %d is: %s\n", index, index, entry[index]);
     		memset(error_msg, 0, sizeof(error_msg));
     		sprintf(error_msg+strlen(error_msg), "%s%lue0", suc_msg, (action[0]+1));
     		send(connection, error_msg, 100, 0);
@@ -279,7 +220,6 @@ void * process_task (void * socket, char * prompt) {
     	//return an error to the client here
     	printf("A syntactical error occured\n");
     }
-    	//printf("End reacched\n");
     	return (void *) 0;
 }
 
@@ -302,8 +242,6 @@ void * handle_client (void * snew) {
 	for (;;) {
 		bzero(prompt, 1024);
 		recv(socket, prompt, sizeof(prompt), 0);
-		//printf("test, value of prompt: %s\n", prompt);
-		//printf("value of prompt %s\n", prompt);
 		if (prompt != NULL){
 			pthread_mutex_lock(&mutex);
 			process_task( (void*) &socket, (char*) prompt);
@@ -329,30 +267,26 @@ void init_board (FILE * input) {
 			entry[i] = (char *) malloc (1024*sizeof(char));
 			det[i] = (char *) malloc (1*sizeof(char));
 		}
-		statefile = fopen("statefile.txt", "w+");
+		statefile = fopen("statefile.all", "w+");
 		for (k=0; k <= entryCAP -1; k++) {
 			det[k] = "p";
 			fprintf(statefile, "!%dp%lu\n%s\n",k, strlen(entry[k]), entry[k]);
-			//printf("Entry %d %s\n", k, entry[k]);
 		}
 		fclose(statefile);
 	}
 }
 
 void read_statefile(char *statefile_tmp) {
-	//FILE * preload = statefile;
-	//FILE * before = statefile;
+
 	int i = 0, k =0;
 	char end[1024];
 	char line[1024];
 	char entry_message[1024];
 
 	FILE *statefile_r = fopen(statefile_tmp, "r");
-
-	printf("entr cap = %d\n", entryCAP);
+	//To get the count of the number of entries from a statefile
 	while (fgets(line, sizeof(line), statefile_r) != NULL) {
 		if (strncmp(line, "!", 1)== 0) {
-			//printf("%s [%d]\n", line, i);
 			i++;
 		}
 	}
@@ -362,42 +296,24 @@ void read_statefile(char *statefile_tmp) {
 
 	entryCAP = i;
 	entry = (char **) malloc (entryCAP*sizeof(char*));
-
-	
-	//printf("this is i: %d\n", i);
 	i = 0;
 	rewind(statefile_r);
 	while (fgets(line, sizeof(line), statefile_r) != NULL) {
-		//printf("checkpoint0\n");
 		if (strncmp(line, "!", 1)== 0) {
 			entry[i] = (char *) malloc (1024*sizeof(char));
-			//printf("checkpoint0a\n");
-			//printf("cut %s\n", line);
 			strcat(end, line);
-			//printf("checkpoint0b\n");
 			fgets(entry_message, sizeof(entry_message), statefile_r);
-			//printf("checkpoint0c\n");
-			//printf("end %s\n", end);
 			strcat(end, entry_message);
-			//printf("checkpoint0d\n");
-			//printf("checkpoint\n");
-			//printf("end: %s", end);
 			strcpy(entry[i], end);
-			//printf("checkpoint0e\n");
-			//printf("entry %s end is %s",entry[i], end);
 			bzero(entry_message, 1024);
 			bzero(end, 1024);
 			bzero(line, 1024);
 			i++;
-			//printf("checkpoint2\n");
 		}
-		//printf("checkpoint3\n");
 	}
-	//printf("Entry  is: %s \n", entry[0]);
-	//printf("Entry  is: %s \n", entry[1]);
 	fclose(statefile_r);
 }
-
+//Free the malloced WB
 void free_board () {
 	int j;
 	for (j=0; j <= entryCAP -1; j++) {
@@ -406,26 +322,11 @@ void free_board () {
 	free(entry);
 }
 
-long ** cmd_parse (char * string) {
-	int counter=0;
-	long ** bundle;
-	long value;
-	char * str;
-	str = string;
-	while (*str) {
-		if (isdigit(*str)) {
-			long value = strtol(str, &str, 10);
-			bundle[counter] = (long *) value;
-		}
-		str++;
-	}
-	return bundle;
-}
-
+//Save the whiteboard status to statefile
 void save_wb()
 {
     int numMessages = entryCAP;
-    statefile = fopen("statefile.txt", "w+");
+    statefile = fopen("statefile.all", "w+");
     if(!statefile){
     	printf("cannot open whiteboard save file");
     }
@@ -434,10 +335,7 @@ void save_wb()
     for(p; p <= numMessages-1; ++p)
     {   
         // message
-        fprintf(statefile, "!%dp%lu\n%s\n",p, strlen(entry[p]), entry[p]);
-       //fprintf(statefile,"!%s", entry[p]);
-        printf("%s",entry[p]);
-        
+        fprintf(statefile, "!%d%s%lu\n%s\n",p, det[p], strlen(entry[p]), entry[p]);    
     }
     fflush(statefile);
     fclose(statefile);
@@ -487,18 +385,6 @@ void deamonize (FILE * deamonfile) {
         fprintf(fp, "cannot create new process group");
         exit(1);
     }
-
-    /* Change the current working directory */
-    // if ((chdir("/")) < 0) {
-    //   printf("Could not change working directory to /\n");
-    //   exit(1);
-    // }
-
-    // close standard fds
-    // close(STDIN_FILENO);
-    // close(STDOUT_FILENO);
-    // close(STDERR_FILENO);
-    //printf("HIHIHIHI\n");
 
 }
 
