@@ -1,10 +1,8 @@
 Group Members:
 
 	Angus Aabels
-	aabels 1408466
 
 	Toluwanimi Akindele
-		1440804
 
 Files:
 	1. wb.c .	.	.	.	.	server program
